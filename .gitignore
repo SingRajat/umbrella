@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+
+# Environment Variables & Secrets
+.env
+*.local
+
+# Storage & Runtime Data
+data/chroma_db/
+data/documents/*
+!data/documents/.gitkeep
+
+# Experiment Results (can be committed or tracked)
+eval/results/*.json
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+.streamlit/
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
