@@ -1,73 +1,45 @@
+"""Structured logging configuration for Umbrella."""
 import json
 import logging
 import sys
-import time
-from contextvars import ContextVar
-from typing import Any
-
-# Context variable for correlation ID tracking across async calls
-correlation_id_ctx: ContextVar[str] = ContextVar("correlation_id", default="system")
+from typing import Any, Dict
 
 
 class JSONFormatter(logging.Formatter):
-    """Custom JSON formatter for structured logging."""
+    """Formats log records as JSON objects for structured observability."""
 
     def format(self, record: logging.LogRecord) -> str:
-        log_obj: dict[str, Any] = {
+        log_entry: Dict[str, Any] = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
-            "correlation_id": correlation_id_ctx.get(),
         }
-        if hasattr(record, "duration_ms"):
-            log_obj["duration_ms"] = getattr(record, "duration_ms")
-        if hasattr(record, "extra_data"):
-            log_obj["extra"] = getattr(record, "extra_data")
+
+        # Include custom attributes if present
+        if hasattr(record, "request_id"):
+            log_entry["request_id"] = getattr(record, "request_id")
+        if hasattr(record, "correlation_id"):
+            log_entry["correlation_id"] = getattr(record, "correlation_id")
+        if hasattr(record, "retrieval_latency"):
+            log_entry["retrieval_latency"] = getattr(record, "retrieval_latency")
+        if hasattr(record, "llm_latency"):
+            log_entry["llm_latency"] = getattr(record, "llm_latency")
+        if hasattr(record, "token_usage"):
+            log_entry["token_usage"] = getattr(record, "token_usage")
+
         if record.exc_info:
-            log_obj["exception"] = self.formatException(record.exc_info)
-        return json.dumps(log_obj)
+            log_entry["exception"] = self.formatException(record.exc_info)
+
+        return json.dumps(log_entry)
 
 
-def setup_logger(name: str = "umbrella", level: str = "INFO") -> logging.Logger:
-    """Configures structured JSON logger."""
+def get_logger(name: str) -> logging.Logger:
+    """Return a configured logger with JSON formatting."""
     logger = logging.getLogger(name)
-    logger.setLevel(level.upper())
-    logger.propagate = False
-
     if not logger.handlers:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
         logger.addHandler(handler)
-
+        logger.setLevel(logging.INFO)
     return logger
-
-
-logger = setup_logger()
-
-
-class StageTimer:
-    """Context manager to measure and log execution duration for pipeline stages."""
-
-    def __init__(self, stage_name: str, extra: dict[str, Any] | None = None):
-        self.stage_name = stage_name
-        self.extra = extra or {}
-        self.start_time = 0.0
-
-    def __enter__(self):
-        self.start_time = time.perf_counter()
-        logger.info(f"Starting stage: {self.stage_name}", extra={"extra_data": self.extra})
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        duration_ms = round((time.perf_counter() - self.start_time) * 1000, 2)
-        if exc_type:
-            logger.error(
-                f"Stage {self.stage_name} failed after {duration_ms}ms",
-                extra={"duration_ms": duration_ms, "extra_data": self.extra},
-            )
-        else:
-            logger.info(
-                f"Stage {self.stage_name} completed in {duration_ms}ms",
-                extra={"duration_ms": duration_ms, "extra_data": self.extra},
-            )
