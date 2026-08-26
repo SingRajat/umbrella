@@ -14,9 +14,20 @@ venv/
 ENV/
 
 # Testing & Linting
+tests/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Internal specifications & tracking markdown files
+API.md
+Appflow.md
+GUARDRAILS.md
+PRD.md
+TechStack.md
+Tracker.md
+AGENT.md
+FLOW.md
 
 # ChromaDB & Upload Data
 data/chroma_db/
@@ -32,3 +43,4 @@ eval/results/*
 Thumbs.db
 .vscode/
 .idea/
+
