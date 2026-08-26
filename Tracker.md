@@ -10,55 +10,55 @@
 
 ## V1 — RAG Foundation
 
-| Task                          | Status        |
-| ----------------------------- | ------------- |
-| Project/repository setup      | 🟢 Completed  |
-| Backend FastAPI setup         | 🟢 Completed  |
-| Frontend Streamlit setup      | 🟢 Completed  |
-| API structure from `API.md`   | 🟢 Completed  |
-| Landing page                  | 🟢 Completed  |
-| RAG workspace UI              | 🟢 Completed  |
-| Document upload               | 🟢 Completed  |
-| PDF ingestion                 | 🟢 Completed  |
-| DOCX ingestion                | 🟢 Completed  |
-| TXT ingestion                 | 🟢 Completed  |
-| Text preprocessing & cleaning | 🟢 Completed  |
-| Simple chunking               | 🟢 Completed  |
-| Chunk metadata                | 🟢 Completed  |
-| Embedding generation          | 🟢 Completed  |
-| ChromaDB integration          | 🟢 Completed  |
-| Document ingestion pipeline   | 🟢 Completed  |
-| Query pipeline                | 🟢 Completed  |
-| Top-k=3 retrieval             | 🟢 Completed  |
-| Retrieved-context validation  | 🟢 Completed  |
-| LLM generation                | 🟢 Completed  |
-| Chunk-level citations         | 🟢 Completed  |
-| Multi-source citations        | 🟢 Completed  |
-| Citation-aware refusal        | 🟢 Completed  |
-| Answer/output validation      | 🟢 Completed  |
-| Streaming responses           | 🟢 Completed  |
-| Error handling                | 🟢 Completed  |
-| Rate limiting                 | 🟢 Completed  |
-| API security                  | 🟢 Completed  |
+| Task                          | Status   |
+| ----------------------------- | -------- |
+| Project/repository setup      | 🟢 Completed |
+| Backend FastAPI setup         | 🔴 To Do |
+| Frontend Streamlit setup      | 🔴 To Do |
+| API structure from `API.md`   | 🔴 To Do |
+| Landing page                  | 🔴 To Do |
+| RAG workspace UI              | 🔴 To Do |
+| Document upload               | 🔴 To Do |
+| PDF ingestion                 | 🔴 To Do |
+| DOCX ingestion                | 🔴 To Do |
+| TXT ingestion                 | 🔴 To Do |
+| Text preprocessing & cleaning | 🔴 To Do |
+| Simple chunking               | 🔴 To Do |
+| Chunk metadata                | 🔴 To Do |
+| Embedding generation          | 🔴 To Do |
+| ChromaDB integration          | 🔴 To Do |
+| Document ingestion pipeline   | 🔴 To Do |
+| Query pipeline                | 🔴 To Do |
+| Top-k=3 retrieval             | 🔴 To Do |
+| Retrieved-context validation  | 🔴 To Do |
+| LLM generation                | 🔴 To Do |
+| Chunk-level citations         | 🔴 To Do |
+| Multi-source citations        | 🔴 To Do |
+| Citation-aware refusal        | 🔴 To Do |
+| Answer/output validation      | 🔴 To Do |
+| Streaming responses           | 🔴 To Do |
+| Error handling                | 🔴 To Do |
+| Rate limiting                 | 🔴 To Do |
+| API security                  | 🔴 To Do |
 
 ---
 
 ## V1 — Evaluation
 
-| Task                          | Status        |
-| ----------------------------- | ------------- |
-| Obtain evaluation dataset     | 🔴 To Do      |
-| Create evaluation pipeline    | 🟢 Completed  |
-| RAGAS setup                   | 🟢 Completed  |
-| Faithfulness evaluation       | 🔴 To Do      |
-| Context precision evaluation  | 🔴 To Do      |
-| Context recall evaluation     | 🔴 To Do      |
-| Latency tracking              | 🔴 To Do      |
-| Token usage tracking          | 🔴 To Do      |
-| Failure/refusal tracking      | 🔴 To Do      |
-| Establish baseline results    | 🔴 To Do      |
-| Identify first bottleneck     | 🔴 To Do      |
-| Document engineering decision | 🔴 To Do      |
+| Task                          | Status   |
+| ----------------------------- | -------- |
+| Obtain evaluation dataset     | 🔴 To Do |
+| Create evaluation pipeline    | 🔴 To Do |
+| RAGAS setup                   | 🔴 To Do |
+| Faithfulness evaluation       | 🔴 To Do |
+| Context precision evaluation  | 🔴 To Do |
+| Context recall evaluation     | 🔴 To Do |
+| Latency tracking              | 🔴 To Do |
+| Token usage tracking          | 🔴 To Do |
+| Failure/refusal tracking      | 🔴 To Do |
+| Establish baseline results    | 🔴 To Do |
+| Identify first bottleneck     | 🔴 To Do |
+| Document engineering decision | 🔴 To Do |
 
 ---
 
@@ -82,30 +82,59 @@
 
 ## V1 — Finalization
 
-| Task                         | Status        |
-| ---------------------------- | ------------- |
-| End-to-end testing           | 🟢 Completed  |
-| Edge-case testing            | 🟢 Completed  |
-| API validation               | 🟢 Completed  |
-| UI/UX polish                 | 🟢 Completed  |
-| Production error handling    | 🟢 Completed  |
-| Final evaluation             | 🔴 To Do      |
-| Final performance comparison | 🔴 To Do      |
-| Engineering decision log     | 🟢 Completed  |
-| Resume-ready metrics         | 🔴 To Do      |
-| V1 complete                  | 🟡 In Progress |
+| Task                         | Status   |
+| ---------------------------- | -------- |
+| End-to-end testing           | 🔴 To Do |
+| Edge-case testing            | 🔴 To Do |
+| API validation               | 🔴 To Do |
+| UI/UX polish                 | 🔴 To Do |
+| Production error handling    | 🔴 To Do |
+| Final evaluation             | 🔴 To Do |
+| Final performance comparison | 🔴 To Do |
+| Engineering decision log     | 🔴 To Do |
+| Resume-ready metrics         | 🔴 To Do |
+| V1 complete                  | 🔴 To Do |
 
 ---
 
 ## Rules for Antigravity
 
 1. Work on **one logical task at a time**.
-2. Change status to **🟡 In Progress** before starting a task.
-3. Change status to **🟢 Completed** only after the task is implemented and verified.
-4. If blocked, keep the task **🟡 In Progress** and document the blocker.
-5. Do not mark a task completed based only on code generation; verify that it works.
-6. Do not start V2/V3 until V1 is completed and evaluated.
-7. Update this file whenever task status changes.
-8. Do not remove completed tasks; preserve the project history.
-9. For optimization tasks, record measurable before/after results where applicable.
-10. Follow `API.md` and `AppFlow.md` as the architecture/API source of truth.
+
+2. Implement **only ONE 🔴 To Do task per execution cycle**.
+
+3. Do not implement, scaffold, or modify code for future 🔴 To Do tasks.
+
+4. Change status to **🟡 In Progress** before starting a task.
+
+5. Before implementation, briefly explain what will be changed and why.
+
+6. Implement the current task completely before moving to another task.
+
+7. Run the relevant tests or verification after implementation.
+
+8. Change status to **🟢 Completed** only after the task is implemented and verified.
+
+9. If blocked, keep the task **🟡 In Progress** and document the blocker.
+
+10. Do not mark a task completed based only on code generation; verify that it works.
+
+11. After completing a task, **STOP and wait for the next instruction**. Do not automatically start the next To Do task.
+
+12. Do not batch multiple tracker tasks into one implementation.
+
+13. Do not create placeholder implementations for future tasks just to mark them as completed.
+
+22. For optimization tasks, record measurable **before/after results** where applicable.
+
+23. Use the same **50–60 ground-truth questions** when comparing RAG strategies.
+
+24. Test major RAG optimization changes **one at a time** before combining them.
+
+26. Do not start V2/V3 until V1 is completed and evaluated.
+
+27. Update this file whenever task status changes.
+
+28. Do not remove completed tasks; preserve the project history.
+
+29. Follow `API.md`, `AppFlow.md`, and `Guardrails.md` as the architecture, API, and project constraint source of truth.

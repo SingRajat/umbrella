@@ -1,3 +1,7 @@
+# Environment & Secrets
+.env
+*.env
+
 # Python
 __pycache__/
 *.py[cod]
@@ -5,47 +9,26 @@ __pycache__/
 *.so
 .Python
 env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-.venv
 venv/
+.venv/
 ENV/
 
-# Environment Variables & Secrets
-.env
-*.local
+# Testing & Linting
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Storage & Runtime Data
+# ChromaDB & Upload Data
 data/chroma_db/
 data/documents/*
 !data/documents/.gitkeep
 
-# Experiment Results (can be committed or tracked)
-eval/results/*.json
+# Evaluation Results
+eval/results/*
+!eval/results/.gitkeep
 
-# Testing & Cache
-.pytest_cache/
-.coverage
-htmlcov/
-.streamlit/
-
-# IDE & OS
-.idea/
-.vscode/
-*.swp
-*.swo
+# OS / IDE
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
