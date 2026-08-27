@@ -1,81 +1,92 @@
+"""Chunking logic using LangChain RecursiveCharacterTextSplitter."""
 import uuid
-from dataclasses import dataclass
-from typing import Protocol
+from datetime import datetime, timezone
+from typing import List, Optional
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from src.config.settings import settings
-from src.ingestion.loaders import RawPage
+from src.ingestion.loaders import RawDocument
+from src.ingestion.metadata import ChunkRecord, extract_section_heading
+from src.common.logging import get_logger
+
+logger = get_logger("umbrella.ingestion.chunker")
 
 
-@dataclass
-class Chunk:
-    """Represents a text chunk produced from document pages."""
-    chunk_id: str
-    text: str
-    page_number: int | list[int] | None
-    char_start: int
-    char_end: int
-    chunk_index: int
+def get_text_splitter(chunk_size: int = 800, chunk_overlap: int = 100) -> RecursiveCharacterTextSplitter:
+    """Create a configured RecursiveCharacterTextSplitter instance."""
+    return RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        separators=["\n\n", "\n", ". ", " ", ""],
+        strip_whitespace=True,
+    )
 
 
-class Chunker(Protocol):
-    """Protocol for pluggable document chunking implementations."""
+def chunk_document(
+    doc: RawDocument,
+    chunk_size: int = 800,
+    chunk_overlap: int = 100,
+    content_hash: Optional[str] = None,
+) -> List[ChunkRecord]:
+    """
+    Split a cleaned RawDocument into ChunkRecords with citation metadata.
 
-    def chunk(self, pages: list[RawPage]) -> list[Chunk]:
-        """Chunk a list of cleaned pages into Chunk objects."""
-        ...
+    - Multi-page documents (PDF): Chunks are created per page to preserve exact page references.
+    - Single-segment documents (DOCX/TXT/MD): Chunks span document with page_number=None.
+    """
+    splitter = get_text_splitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    ingested_at = datetime.now(timezone.utc).isoformat()
+    chunks: List[ChunkRecord] = []
+    chunk_index = 0
+    current_doc_offset = 0
 
+    for page in doc.pages:
+        page_text = page.text.strip()
+        if not page_text:
+            continue
 
-class RecursiveChunker:
-    """Chunks document pages using LangChain's RecursiveCharacterTextSplitter."""
+        # Split text into chunks
+        split_texts = splitter.split_text(page_text)
+        page_offset = 0
 
-    def __init__(
-        self,
-        chunk_size: int = settings.chunk_size,
-        chunk_overlap: int = settings.chunk_overlap,
-        separators: list[str] | None = None,
-    ):
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.separators = separators or ["\n\n", "\n", ". ", " ", ""]
-        self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            separators=self.separators,
-            length_function=len,
-        )
-
-    def chunk(self, pages: list[RawPage]) -> list[Chunk]:
-        chunks: list[Chunk] = []
-        global_char_offset = 0
-        chunk_index = 0
-
-        for page in pages:
-            page_text = page.text.strip()
-            if not page_text:
+        for text_piece in split_texts:
+            clean_piece = text_piece.strip()
+            if not clean_piece:
                 continue
 
-            splits = self.splitter.split_text(page_text)
-            for split_text in splits:
-                split_len = len(split_text)
-                chunk_id = str(uuid.uuid4())
-                char_start = global_char_offset
-                char_end = global_char_offset + split_len
+            # Calculate character offsets within the page / document
+            char_pos = page_text.find(clean_piece, page_offset)
+            if char_pos == -1:
+                char_pos = page_offset
+            char_start = current_doc_offset + char_pos
+            char_end = char_start + len(clean_piece)
+            page_offset = char_pos + len(clean_piece)
 
-                chunks.append(
-                    Chunk(
-                        chunk_id=chunk_id,
-                        text=split_text,
-                        page_number=page.page_num,
-                        char_start=char_start,
-                        char_end=char_end,
-                        chunk_index=chunk_index,
-                    )
-                )
-                chunk_index += 1
-                global_char_offset += split_len + 1  # include separator offset
+            # Detect section heading
+            heading = extract_section_heading(clean_piece)
 
-        return chunks
+            chunk_record = ChunkRecord(
+                chunk_id=str(uuid.uuid4()),
+                doc_id=doc.doc_id,
+                doc_name=doc.filename,
+                source_type=doc.source_type,
+                page_number=page.page_num,
+                section_heading=heading,
+                chunk_index=chunk_index,
+                char_start=char_start,
+                char_end=char_end,
+                text=clean_piece,
+                ingested_at=ingested_at,
+                content_hash=content_hash,
+            )
+            chunks.append(chunk_record)
+            chunk_index += 1
 
+        current_doc_offset += len(page_text)
 
-default_chunker = RecursiveChunker()
+    logger.info(
+        f"Chunked document '{doc.filename}' (doc_id: {doc.doc_id}) into {len(chunks)} chunks "
+        f"(chunk_size: {chunk_size}, overlap: {chunk_overlap})"
+    )
+
+    return chunks
