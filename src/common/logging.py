@@ -4,6 +4,8 @@ import logging
 import sys
 from typing import Any, Dict
 
+from src.config.settings import get_settings
+
 
 class JSONFormatter(logging.Formatter):
     """Formats log records as JSON objects for structured observability."""
@@ -41,5 +43,8 @@ def get_logger(name: str) -> logging.Logger:
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(JSONFormatter())
         logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
+        settings = get_settings()
+        level = getattr(logging, str(settings.log_level).upper(), logging.INFO)
+        logger.setLevel(level)
     return logger
+
