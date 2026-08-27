@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     # LLM Settings
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "qwen/qwen3.8-27b"
     temperature: float = 0.7
 
     # RAG Settings
