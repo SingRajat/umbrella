@@ -1,16 +1,41 @@
+"""Workspace page for Umbrella RAG application."""
 import streamlit as st
-from frontend.components.chat import render_chat_interface
-from frontend.components.upload import render_upload_widget
+from frontend.app import get_backend_url
+from frontend.components.chat import render_chat_section
+from frontend.components.upload import render_upload_section
 
-st.set_page_config(page_title="Umbrella — Workspace", page_icon="☂️", layout="wide")
 
-st.title("☂️ RAG Workspace")
+def render_workspace_page():
+    st.set_page_config(
+        page_title="Workspace — Umbrella RAG",
+        page_icon="☂️",
+        layout="wide",
+    )
 
-# 2-Column layout: Left column for document ingestion and management, Right column for chat
-left_col, right_col = st.columns([1, 2], gap="large")
+    # Initialize session states
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "current_doc" not in st.session_state:
+        st.session_state.current_doc = None
 
-with left_col:
-    render_upload_widget()
+    backend_url = get_backend_url()
 
-with right_col:
-    render_chat_interface()
+    st.title("📁 RAG Workspace")
+    st.caption("Upload a document on the left, then ask questions on the right to receive cited answers.")
+
+    col_left, col_right = st.columns([1, 2], gap="large")
+
+    with col_left:
+        render_upload_section(backend_url)
+
+    with col_right:
+        active_doc_id = (
+            st.session_state.current_doc.get("doc_id")
+            if st.session_state.get("current_doc")
+            else None
+        )
+        render_chat_section(backend_url, active_doc_id=active_doc_id)
+
+
+if __name__ == "__main__":
+    render_workspace_page()
