@@ -1,104 +1,108 @@
-from typing import Any
+"""LCEL document ingestion pipeline chain."""
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from langchain_core.runnables import RunnableLambda
 
-from src.common.errors import DuplicateDocumentError, IngestionError
-from src.common.logging import StageTimer, logger
-from src.ingestion.chunker import default_chunker
-from src.ingestion.cleaner import clean_pages
-from src.ingestion.loaders import compute_sha256, load_document
-from src.ingestion.metadata import construct_chunk_records
-from src.storage.chroma import storage_client
+from src.config.settings import get_settings
+from src.common.errors import IngestionError
+from src.common.logging import get_logger
+from src.ingestion.loaders import RawDocument, load_docx, load_pdf, load_txt
+from src.ingestion.cleaner import clean_document
+from src.ingestion.chunker import chunk_document
+from src.ingestion.metadata import ChunkRecord
+from src.storage.chroma import ChromaVectorStore, get_vector_store
+
+logger = get_logger("umbrella.chains.ingestion")
 
 
-def _check_idempotency_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    file_bytes = input_data["file_bytes"]
-    content_hash = compute_sha256(file_bytes)
-    existing_doc_id = storage_client.check_content_hash(content_hash)
-    if existing_doc_id:
-        logger.info(f"Duplicate document upload detected with hash {content_hash}. Doc ID: {existing_doc_id}")
-        raise DuplicateDocumentError(
-            message=f"Document with identical content already exists (doc_id: {existing_doc_id}).",
-            existing_doc_id=existing_doc_id,
+def _load_step(input_data: Dict[str, Any]) -> RawDocument:
+    """Step 1: Load file based on extension into standardized RawDocument."""
+    file_path = input_data["file_path"]
+    doc_id = input_data.get("doc_id")
+    path = Path(file_path)
+    suffix = path.suffix.lower()
+
+    if suffix == ".pdf":
+        return load_pdf(file_path, doc_id=doc_id)
+    elif suffix == ".docx":
+        return load_docx(file_path, doc_id=doc_id)
+    elif suffix in (".txt", ".md"):
+        return load_txt(file_path, doc_id=doc_id)
+    else:
+        raise IngestionError(
+            f"Unsupported document format '{suffix}'. Supported: .pdf, .docx, .txt, .md",
+            error_code="UNSUPPORTED_FORMAT",
+            status_code=400,
         )
-    return input_data
 
 
-def _load_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("ingestion_load", extra={"filename": input_data["filename"]}):
-        raw_doc = load_document(
-            file_bytes=input_data["file_bytes"],
-            filename=input_data["filename"],
-            extension=input_data["extension"],
+def _clean_step(raw_doc: RawDocument) -> RawDocument:
+    """Step 2: Clean and normalize text across all document pages."""
+    return clean_document(raw_doc)
+
+
+def _make_chunk_step(settings, content_hash: Optional[str] = None):
+    """Step 3: Chunk cleaned document into ChunkRecords with citation metadata."""
+    def _chunk(cleaned_doc: RawDocument) -> List[ChunkRecord]:
+        return chunk_document(
+            cleaned_doc,
+            chunk_size=settings.chunk_size,
+            chunk_overlap=settings.chunk_overlap,
+            content_hash=content_hash,
         )
-    input_data["raw_doc"] = raw_doc
-    return input_data
+    return _chunk
 
 
-def _clean_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("ingestion_clean", extra={"filename": input_data["filename"]}):
-        cleaned_pages = clean_pages(input_data["raw_doc"].pages)
-    input_data["cleaned_pages"] = cleaned_pages
-    return input_data
+def _make_store_step(vector_store: ChromaVectorStore):
+    """Step 4: Generate embeddings and index ChunkRecords into ChromaDB."""
+    def _store(chunks: List[ChunkRecord]) -> Dict[str, Any]:
+        if not chunks:
+            raise IngestionError("Document produced 0 chunks after processing.", error_code="EMPTY_CHUNKS", status_code=422)
 
-
-def _chunk_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("ingestion_chunk", extra={"page_count": len(input_data["cleaned_pages"])}):
-        chunks = default_chunker.chunk(input_data["cleaned_pages"])
-    if not chunks:
-        raise IngestionError("Chunking resulted in zero chunks.")
-    input_data["chunks"] = chunks
-    return input_data
-
-
-def _metadata_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("ingestion_metadata"):
-        records = construct_chunk_records(
-            raw_doc=input_data["raw_doc"],
-            chunks=input_data["chunks"],
-            domain_tag=input_data.get("domain_tag", "general"),
-        )
-    input_data["records"] = records
-    return input_data
-
-
-def _storage_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("ingestion_storage", extra={"chunk_count": len(input_data["records"])}):
-        storage_client.upsert(input_data["records"])
-
-    raw_doc = input_data["raw_doc"]
-    return {
-        "doc_id": raw_doc.doc_id,
-        "filename": raw_doc.filename,
-        "status": "ingested",
-        "chunk_count": len(input_data["records"]),
-        "source_type": raw_doc.source_type,
-        "ingested_at": raw_doc.uploaded_at,
-    }
-
-
-# Declarative LCEL Ingestion Chain
-ingestion_chain = (
-    RunnableLambda(_check_idempotency_step)
-    | RunnableLambda(_load_step)
-    | RunnableLambda(_clean_step)
-    | RunnableLambda(_chunk_step)
-    | RunnableLambda(_metadata_step)
-    | RunnableLambda(_storage_step)
-)
-
-
-def run_ingestion(
-    file_bytes: bytes,
-    filename: str,
-    extension: str,
-    domain_tag: str | None = "general",
-) -> dict[str, Any]:
-    """Runs the declarative LCEL ingestion pipeline."""
-    return ingestion_chain.invoke(
-        {
-            "file_bytes": file_bytes,
-            "filename": filename,
-            "extension": extension,
-            "domain_tag": domain_tag,
+        vector_store.upsert(chunks)
+        first_chunk = chunks[0]
+        return {
+            "doc_id": first_chunk.doc_id,
+            "filename": first_chunk.doc_name,
+            "source_type": first_chunk.source_type,
+            "chunk_count": len(chunks),
+            "ingested_at": first_chunk.ingested_at,
+            "status": "ingested",
         }
+    return _store
+
+
+def create_ingestion_chain(vector_store: Optional[ChromaVectorStore] = None, content_hash: Optional[str] = None):
+    """
+    Construct the LCEL Document Ingestion Pipeline:
+    load -> clean -> chunk -> store -> summary
+    """
+    settings = get_settings()
+    store = vector_store or get_vector_store()
+
+    chain = (
+        RunnableLambda(_load_step)
+        | RunnableLambda(_clean_step)
+        | RunnableLambda(_make_chunk_step(settings, content_hash=content_hash))
+        | RunnableLambda(_make_store_step(store))
     )
+    return chain
+
+
+def run_ingestion_pipeline(
+    file_path: str,
+    doc_id: Optional[str] = None,
+    content_hash: Optional[str] = None,
+    vector_store: Optional[ChromaVectorStore] = None,
+) -> Dict[str, Any]:
+    """Execute the end-to-end LCEL ingestion pipeline synchronously."""
+    chain = create_ingestion_chain(vector_store=vector_store, content_hash=content_hash)
+    payload = {
+        "file_path": file_path,
+        "doc_id": doc_id,
+        "content_hash": content_hash,
+    }
+    logger.info(f"Starting LCEL document ingestion pipeline for '{file_path}'")
+    result = chain.invoke(payload)
+    logger.info(f"Completed LCEL ingestion: {result['filename']} ({result['chunk_count']} chunks indexed)")
+    return result
