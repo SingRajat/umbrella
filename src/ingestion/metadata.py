@@ -1,58 +1,59 @@
+"""Chunk metadata schema and extraction utilities."""
 import re
-from typing import Any
-from src.ingestion.chunker import Chunk
-from src.ingestion.loaders import RawDocument
-from src.storage.chroma import ChunkRecord
+import uuid
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from src.ingestion.loaders import RawDocument, RawPage
 
 
-def extract_section_heading(text: str) -> str | None:
-    """Attempts to extract markdown heading or section title if present at chunk beginning."""
-    lines = text.strip().split("\n")
-    if lines:
-        first_line = lines[0].strip()
-        # Markdown heading match (e.g. ## Overview)
-        match = re.match(r"^#{1,6}\s+(.+)$", first_line)
-        if match:
-            return match.group(1).strip()
-        # All-caps short section title match (e.g. INTRODUCTION)
-        if first_line.isupper() and 3 <= len(first_line) <= 50:
-            return first_line
-    return None
+@dataclass
+class ChunkRecord:
+    """Standardized record representing an indexed text chunk with citation metadata."""
+    chunk_id: str
+    doc_id: str
+    doc_name: str
+    source_type: str
+    page_number: Optional[int]
+    section_heading: Optional[str]
+    chunk_index: int
+    char_start: int
+    char_end: int
+    text: str
+    ingested_at: str
+    content_hash: Optional[str] = None
 
-
-def construct_chunk_records(
-    raw_doc: RawDocument,
-    chunks: list[Chunk],
-    domain_tag: str | None = "general",
-) -> list[ChunkRecord]:
-    """Attaches complete PRD §3.4 metadata schema and creates ChunkRecord objects."""
-    records: list[ChunkRecord] = []
-
-    for chunk in chunks:
-        section_heading = extract_section_heading(chunk.text)
-
-        metadata: dict[str, Any] = {
-            "chunk_id": chunk.chunk_id,
-            "doc_id": raw_doc.doc_id,
-            "doc_name": raw_doc.filename,
-            "source_type": raw_doc.source_type,
-            "page_number": chunk.page_number if chunk.page_number is not None else "",
-            "section_heading": section_heading if section_heading is not None else "",
-            "chunk_index": chunk.chunk_index,
-            "char_start": chunk.char_start,
-            "char_end": chunk.char_end,
-            "domain_tag": domain_tag or "general",
-            "ingested_at": raw_doc.uploaded_at,
-            "content_hash": raw_doc.content_hash,
+    def to_metadata_dict(self) -> Dict[str, Any]:
+        """Convert chunk metadata to flat dictionary for ChromaDB vector storage."""
+        return {
+            "chunk_id": self.chunk_id,
+            "doc_id": self.doc_id,
+            "doc_name": self.doc_name,
+            "source_type": self.source_type,
+            "page_number": self.page_number if self.page_number is not None else -1,
+            "section_heading": self.section_heading or "",
+            "chunk_index": self.chunk_index,
+            "char_start": self.char_start,
+            "char_end": self.char_end,
+            "ingested_at": self.ingested_at,
+            "content_hash": self.content_hash or "",
         }
 
-        records.append(
-            ChunkRecord(
-                chunk_id=chunk.chunk_id,
-                doc_id=raw_doc.doc_id,
-                text=chunk.text,
-                metadata=metadata,
-            )
-        )
 
-    return records
+def extract_section_heading(text: str) -> Optional[str]:
+    """
+    Detect the most prominent heading in the chunk text.
+    Looks for Markdown headers (e.g. # Title, ## Section) or colon-terminated headers.
+    """
+    # 1. Markdown headers
+    md_match = re.search(r"^(?:#{1,6})\s+(.+)$", text, re.MULTILINE)
+    if md_match:
+        return md_match.group(1).strip()
+
+    # 2. Capitalized section line ending with colon (e.g. 'Overview:', 'SECTION 1:')
+    colon_match = re.search(r"^[A-Z0-9\s_-]{3,50}:", text, re.MULTILINE)
+    if colon_match:
+        return colon_match.group(0).rstrip(":").strip()
+
+    return None
