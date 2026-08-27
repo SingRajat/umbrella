@@ -1,45 +1,49 @@
+"""Prompt templates and context formatting for grounded RAG generation."""
+from typing import List
+from langchain_core.prompts import ChatPromptTemplate
+
 from src.storage.chroma import RetrievedChunk
 
-SYSTEM_PROMPT = """You are Umbrella, an evidence-grounded AI assistant.
-Your job is to answer the user's question strictly and exclusively based on the provided context passages.
+SYSTEM_PROMPT = """You are Umbrella, an expert AI assistant providing verifiable, citation-backed answers grounded strictly in the retrieved context.
 
-NON-NEGOTIABLE RULES:
-1. Answer ONLY using information explicitly stated in the provided context passages. Do NOT extrapolate or bring in external knowledge.
-2. If the context does NOT contain enough information to answer the question, state: "I cannot answer this question based on the provided context." and provide an empty citations list.
-3. Every factual claim must be backed by one or more citations referencing the exact chunk_id(s) where the fact is stated.
-4. Output MUST be formatted as a valid JSON object matching this schema:
-{
-  "answer": "Your detailed grounded answer here...",
-  "citations": ["chunk_id_1", "chunk_id_2"]
-}
-Do not enclose the JSON in markdown fences (such as ```json) if possible, or ensure it is strictly parseable JSON.
+You must strictly adhere to the following rules:
+1. Answer the question using ONLY the factual evidence provided in the Context below. Do NOT use outside knowledge or extrapolate assumptions.
+2. Every substantive statement or claim you make MUST include an inline bracketed citation pointing to the evidence chunk number(s), e.g. [1], [2], or [1, 2].
+3. Multiple sources must be cited appropriately when synthesizing information across chunks, e.g. "Term A applies [1], whereas Policy B governs exceptions [2, 3]."
+4. If the provided Context does NOT contain sufficient evidence to answer the question accurately, you MUST reply with:
+   "INSUFFICIENT_CONTEXT: The provided documents do not contain enough information to answer this question."
+5. Never invent or speculate facts. If only part of the question can be answered, answer that part with citations and explicitly state what is missing.
 """
 
+USER_TEMPLATE = """Context:
+{context}
 
-def format_context_chunk(chunk: RetrievedChunk) -> str:
-    """Renders a single chunk with full source and citation tags."""
-    doc_name = chunk.metadata.get("doc_name", "unknown")
-    page = chunk.metadata.get("page_number", "")
-    section = chunk.metadata.get("section_heading", "")
+Question: {question}
 
-    tag_parts = [f"chunk_id={chunk.chunk_id}", f'doc="{doc_name}"']
-    if page:
-        tag_parts.append(f"p.{page}")
-    if section:
-        tag_parts.append(f'section="{section}"')
-
-    tag_header = " | ".join(tag_parts)
-    return f"[{tag_header}]\n{chunk.text.strip()}"
+Answer (with strict inline citations):"""
 
 
-def build_grounded_prompt(query: str, chunks: list[RetrievedChunk]) -> tuple[str, str]:
-    """Pure function returning (system_prompt, user_prompt) with all context rendered."""
-    formatted_chunks = "\n\n".join(format_context_chunk(c) for c in chunks)
-    user_prompt = f"""CONTEXT PASSAGES:
-{formatted_chunks}
+def format_context_blocks(chunks: List[RetrievedChunk]) -> str:
+    """
+    Format retrieved chunks into numbered context blocks for prompt injection.
+    Example:
+    [1] (Document: contract.pdf, Page: 2, Section: Scope)
+    The contractor shall deliver...
+    """
+    formatted_blocks = []
+    for idx, chunk in enumerate(chunks, start=1):
+        doc_info = f"Document: {chunk.doc_name}"
+        page_info = f", Page: {chunk.page_number}" if chunk.page_number is not None else ""
+        section_info = f", Section: {chunk.section_heading}" if chunk.section_heading else ""
+        header = f"[{idx}] ({doc_info}{page_info}{section_info})"
+        formatted_blocks.append(f"{header}\n{chunk.text.strip()}")
 
-USER QUESTION:
-{query}
+    return "\n\n".join(formatted_blocks)
 
-JSON RESPONSE:"""
-    return SYSTEM_PROMPT, user_prompt
+
+def get_rag_prompt_template() -> ChatPromptTemplate:
+    """Return LangChain ChatPromptTemplate configured with system instructions."""
+    return ChatPromptTemplate.from_messages([
+        ("system", SYSTEM_PROMPT),
+        ("human", USER_TEMPLATE),
+    ])
