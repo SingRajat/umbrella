@@ -1,69 +1,100 @@
+"""API Middleware for Rate Limiting, Security Headers, and Request Auditing."""
 import time
-import uuid
 from collections import defaultdict
-from fastapi import Request, Response
+from typing import Dict, List, Tuple
+from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from src.common.logging import correlation_id_ctx, logger
-from src.config.settings import settings
+from src.config.settings import get_settings
+from src.common.logging import get_logger
+
+logger = get_logger("umbrella.api.middleware")
 
 
-class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    """Assigns and propagates a unique correlation ID for every request."""
+class RateLimiter:
+    """Sliding-window in-memory rate limiter per client IP."""
 
-    async def dispatch(self, request: Request, call_next):
-        # Extract existing correlation ID or generate a new UUID4
-        correlation_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
-        token = correlation_id_ctx.set(correlation_id)
+    def __init__(self, requests_per_minute: Optional[int] = None):
+        if requests_per_minute is None:
+            requests_per_minute = get_settings().rate_limit_rpm
+        self.requests_per_minute = requests_per_minute
+        self.window_seconds = 60
+        self._clients: Dict[str, List[float]] = defaultdict(list)
 
-        start_time = time.perf_counter()
-        try:
-            response: Response = await call_next(request)
-            response.headers["X-Correlation-ID"] = correlation_id
-            duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-            logger.info(
-                f"{request.method} {request.url.path} responded {response.status_code} in {duration_ms}ms"
-            )
-            return response
-        finally:
-            correlation_id_ctx.reset(token)
+    def is_allowed(self, client_ip: str) -> Tuple[bool, int, int]:
+        """
+        Check if client is within rate limits.
+        Returns (is_allowed, remaining_requests, retry_after_seconds).
+        """
+        now = time.time()
+        window_start = now - self.window_seconds
+
+        # Prune timestamps outside the current 60s window
+        timestamps = self._clients[client_ip]
+        self._clients[client_ip] = [ts for ts in timestamps if ts > window_start]
+
+        current_count = len(self._clients[client_ip])
+        remaining = max(0, self.requests_per_minute - current_count)
+
+        if current_count >= self.requests_per_minute:
+            oldest = self._clients[client_ip][0]
+            retry_after = int(self.window_seconds - (now - oldest)) + 1
+            return False, 0, max(1, retry_after)
+
+        self._clients[client_ip].append(now)
+        return True, remaining - 1, 0
+
+
+_global_rate_limiter: RateLimiter = RateLimiter()
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Token-bucket rate limiter per client IP address."""
-
-    def __init__(self, app, rpm: int = settings.rate_limit_rpm):
-        super().__init__(app)
-        self.rpm = rpm
-        # ip -> list of timestamps
-        self.requests: dict[str, list[float]] = defaultdict(list)
+    """Enforces per-client IP rate limits and attaches rate limit headers."""
 
     async def dispatch(self, request: Request, call_next):
-        # Skip rate limiting for health check
-        if request.url.path.endswith("/health"):
+        # Exclude health check and docs from strict rate limiting
+        if request.url.path in ("/api/v1/health", "/docs", "/openapi.json", "/redoc"):
             return await call_next(request)
 
-        client_ip = request.client.host if request.client else "unknown"
-        now = time.time()
-        window_start = now - 60.0
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        # Check X-Forwarded-For if behind a reverse proxy
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
 
-        # Filter out requests older than 1 minute
-        history = [ts for ts in self.requests[client_ip] if ts > window_start]
-        self.requests[client_ip] = history
+        limit = _global_rate_limiter.requests_per_minute
+        is_allowed, remaining, retry_after = _global_rate_limiter.is_allowed(client_ip)
 
-        if len(history) >= self.rpm:
-            correlation_id = correlation_id_ctx.get()
-            logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+        if not is_allowed:
+            logger.warning(f"Rate limit exceeded for client IP: {client_ip}")
             return JSONResponse(
-                status_code=429,
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
                     "error_code": "RATE_LIMIT_EXCEEDED",
-                    "message": f"Rate limit of {self.rpm} requests per minute exceeded.",
-                    "correlation_id": correlation_id,
+                    "message": f"Rate limit of {limit} requests/minute exceeded. Try again in {retry_after} seconds.",
+                    "status_code": 429,
                 },
-                headers={"X-Correlation-ID": correlation_id},
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(limit),
+                    "X-RateLimit-Remaining": "0",
+                },
             )
 
-        self.requests[client_ip].append(now)
-        return await call_next(request)
+        response = await call_next(request)
+        response.headers["X-RateLimit-Limit"] = str(limit)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        return response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Attaches standard security headers to all HTTP responses."""
+
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
