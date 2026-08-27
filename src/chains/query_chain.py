@@ -1,91 +1,149 @@
+"""LCEL query and generation pipeline chain with streaming support."""
 import json
-from typing import Any, AsyncGenerator
-from langchain_core.runnables import RunnableLambda
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.output_parsers import StrOutputParser
 
-from src.api.schemas import QueryAnswerResponse, QueryRefusalResponse
-from src.common.logging import StageTimer, logger
+from src.api.schemas import CitationItem, QueryResponse, RefusalResponse
+from src.common.logging import get_logger
 from src.query.context_validator import validate_retrieved_context
-from src.query.generator import default_generator
-from src.query.output_validator import validate_and_construct_response
-from src.query.prompt import build_grounded_prompt
-from src.query.retriever import retrieve_context
+from src.query.generator import generate_with_retry, get_chat_llm
+from src.query.output_validator import validate_generated_output
+from src.query.prompt import format_context_blocks, get_rag_prompt_template
+from src.query.retriever import retrieve_chunks
+from src.storage.chroma import ChromaVectorStore, RetrievedChunk, get_vector_store
+
+logger = get_logger("umbrella.chains.query")
 
 
-def _retrieval_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    filters = {"doc_id": input_data["doc_id"]} if input_data.get("doc_id") else None
-    chunks = retrieve_context(query=input_data["query"], filters=filters)
-    input_data["retrieved_chunks"] = chunks
-    return input_data
+def run_query_pipeline(
+    query: str,
+    doc_id: Optional[str] = None,
+    vector_store: Optional[ChromaVectorStore] = None,
+    llm: Optional[BaseChatModel] = None,
+) -> Union[QueryResponse, RefusalResponse]:
+    """
+    Execute the end-to-end RAG query pipeline:
+    1. Retrieval -> Fetch top-k chunks from ChromaDB.
+    2. Context Validation -> Check confidence threshold (0.5).
+    3. Prompt Formatting -> Inject numbered context into ChatPromptTemplate.
+    4. Generation -> Invoke ChatGroq with retry.
+    5. Output Validation -> Extract inline citations and verify facts.
+    """
+    store = vector_store or get_vector_store()
+    chat_llm = llm or get_chat_llm()
 
+    logger.info(f"Initiating RAG query pipeline for query: '{query[:60]}...'")
 
-def _context_validation_step(input_data: dict[str, Any]) -> dict[str, Any]:
-    with StageTimer("query_context_validation"):
-        validation = validate_retrieved_context(input_data["retrieved_chunks"])
-    input_data["validation"] = validation
-    return input_data
+    # Step 1: Retrieval
+    retrieved_chunks = retrieve_chunks(query_text=query, doc_id=doc_id, vector_store=store)
 
-
-def _generation_or_refusal_step(input_data: dict[str, Any]) -> QueryAnswerResponse | QueryRefusalResponse:
-    validation = input_data["validation"]
-    query = input_data["query"]
-
-    # Short-circuit if context is insufficient or low relevance
-    if not validation.is_valid:
-        return QueryRefusalResponse(
+    # Step 2: Context Validation
+    val_result = validate_retrieved_context(retrieved_chunks)
+    if not val_result.is_valid:
+        logger.warning(f"Query refused during context validation: {val_result.reason}")
+        return RefusalResponse(
             status="refused",
-            reason=validation.refusal_reason or "insufficient_context",
-            retrieved_chunk_ids=[c.chunk_id for c in input_data["retrieved_chunks"]],
+            reason=val_result.reason or "Retrieved evidence is insufficient.",
+            retrieved_chunk_ids=[c.chunk_id for c in retrieved_chunks],
             query=query,
         )
 
-    valid_chunks = validation.filtered_chunks
-    system_prompt, user_prompt = build_grounded_prompt(query=query, chunks=valid_chunks)
+    usable_chunks = val_result.valid_chunks
 
-    # Call LLM Generator
-    answer_obj = default_generator.generate(system_prompt=system_prompt, user_prompt=user_prompt)
+    # Step 3: Context Formatting & Prompt Construction
+    context_text = format_context_blocks(usable_chunks)
+    prompt_template = get_rag_prompt_template()
 
-    # Validate citations & construct response
-    with StageTimer("query_output_validation"):
-        output_val = validate_and_construct_response(
-            answer_obj=answer_obj,
-            retrieved_chunks=valid_chunks,
-            query=query,
+    # Step 4: LCEL Generation Chain
+    generation_chain = prompt_template | chat_llm | StrOutputParser()
+
+    try:
+        raw_answer = generate_with_retry(
+            generation_chain,
+            {"context": context_text, "question": query},
         )
+    except Exception as exc:
+        logger.error(f"Error during LLM generation: {exc}")
+        raise
 
-    return output_val.response
+    # Step 5: Output & Citation Validation
+    output_result = validate_generated_output(raw_answer, usable_chunks)
 
-
-# Declarative LCEL Query Chain
-query_chain = (
-    RunnableLambda(_retrieval_step)
-    | RunnableLambda(_context_validation_step)
-    | RunnableLambda(_generation_or_refusal_step)
-)
-
-
-def run_query(query: str, doc_id: str | None = None) -> QueryAnswerResponse | QueryRefusalResponse:
-    """Executes the LCEL query chain and returns grounded answer or structured refusal."""
-    return query_chain.invoke({"query": query, "doc_id": doc_id})
-
-
-async def run_query_stream(query: str, doc_id: str | None = None) -> AsyncGenerator[str, None]:
-    """Streams answer tokens via Server-Sent Events (SSE)."""
-    filters = {"doc_id": doc_id} if doc_id else None
-    chunks = retrieve_context(query=query, filters=filters)
-    validation = validate_retrieved_context(chunks)
-
-    if not validation.is_valid:
-        refusal = QueryRefusalResponse(
+    if output_result.is_refusal:
+        return RefusalResponse(
             status="refused",
-            reason=validation.refusal_reason or "insufficient_context",
-            retrieved_chunk_ids=[c.chunk_id for c in chunks],
+            reason=output_result.refusal_reason or "Context insufficient.",
+            retrieved_chunk_ids=[c.chunk_id for c in usable_chunks],
             query=query,
         )
-        yield f"data: {json.dumps(refusal.model_dump())}\n\n"
+
+    return QueryResponse(
+        status="answered",
+        answer=output_result.answer,
+        citations=output_result.citations,
+    )
+
+
+def stream_query_pipeline(
+    query: str,
+    doc_id: Optional[str] = None,
+    vector_store: Optional[ChromaVectorStore] = None,
+    llm: Optional[BaseChatModel] = None,
+) -> Iterator[str]:
+    """
+    Stream token chunks using Server-Sent Events (SSE) protocol.
+    Yields data lines formatted as SSE:
+    data: {"type": "token", "content": "..."}\n\n
+    data: {"type": "citations", "citations": [...]}\n\n
+    data: {"type": "done"}\n\n
+    """
+    store = vector_store or get_vector_store()
+    chat_llm = llm or get_chat_llm()
+
+    retrieved_chunks = retrieve_chunks(query_text=query, doc_id=doc_id, vector_store=store)
+    val_result = validate_retrieved_context(retrieved_chunks)
+
+    if not val_result.is_valid:
+        refusal_event = {
+            "type": "refusal",
+            "status": "refused",
+            "reason": val_result.reason or "Context insufficient.",
+            "retrieved_chunk_ids": [c.chunk_id for c in retrieved_chunks],
+        }
+        yield f"data: {json.dumps(refusal_event)}\n\n"
+        yield "data: {\"type\": \"done\"}\n\n"
         return
 
-    valid_chunks = validation.filtered_chunks
-    system_prompt, user_prompt = build_grounded_prompt(query=query, chunks=valid_chunks)
+    usable_chunks = val_result.valid_chunks
+    context_text = format_context_blocks(usable_chunks)
+    prompt_template = get_rag_prompt_template()
 
-    for token in default_generator.generate_stream(system_prompt=system_prompt, user_prompt=user_prompt):
-        yield f"data: {json.dumps({'token': token})}\n\n"
+    generation_chain = prompt_template | chat_llm | StrOutputParser()
+
+    full_text = []
+    for token in generation_chain.stream({"context": context_text, "question": query}):
+        full_text.append(token)
+        token_event = {"type": "token", "content": token}
+        yield f"data: {json.dumps(token_event)}\n\n"
+
+    # Validate full output and emit citations
+    accumulated_answer = "".join(full_text)
+    output_result = validate_generated_output(accumulated_answer, usable_chunks)
+
+    if output_result.is_refusal:
+        refusal_event = {
+            "type": "refusal",
+            "status": "refused",
+            "reason": output_result.refusal_reason or "Context insufficient.",
+        }
+        yield f"data: {json.dumps(refusal_event)}\n\n"
+    else:
+        citations_payload = [
+            c.model_dump() if hasattr(c, "model_dump") else c.__dict__
+            for c in output_result.citations
+        ]
+        citation_event = {"type": "citations", "citations": citations_payload}
+        yield f"data: {json.dumps(citation_event)}\n\n"
+
+    yield "data: {\"type\": \"done\"}\n\n"
