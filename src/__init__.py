@@ -1,1 +1,1 @@
-"""Umbrella RAG system source package."""
+"""Umbrella RAG application source package."""
