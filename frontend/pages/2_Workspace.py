@@ -1,4 +1,10 @@
 """Workspace page for Umbrella RAG application."""
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 import streamlit as st
 from frontend.app import get_backend_url
 from frontend.components.chat import render_chat_section
@@ -37,5 +43,5 @@ def render_workspace_page():
         render_chat_section(backend_url, active_doc_id=active_doc_id)
 
 
-if __name__ == "__main__":
-    render_workspace_page()
+render_workspace_page()
+

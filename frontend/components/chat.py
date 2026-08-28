@@ -1,4 +1,10 @@
 """Chat interface and message handling UI component."""
+import sys
+from pathlib import Path
+
+# Ensure project root is on sys.path 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from typing import Optional
 import requests
 import streamlit as st
