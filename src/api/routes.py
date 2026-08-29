@@ -5,8 +5,10 @@ import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from fastapi import APIRouter, File, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
+
 
 from src.api.schemas import (
     DocumentDeleteResponse,
@@ -21,9 +23,12 @@ from src.api.schemas import (
     QueryResponse,
     RefusalResponse,
 )
+from src.chains.ingestion_chain import run_ingestion_pipeline
+from src.chains.query_chain import run_query_pipeline, stream_query_pipeline
 from src.config.settings import get_settings
 from src.common.errors import IngestionError, ValidationError
 from src.common.logging import get_logger
+from src.storage.chroma import get_vector_store
 
 logger = get_logger("umbrella.routes")
 router = APIRouter(prefix="/api/v1", tags=["RAG"])
@@ -112,7 +117,24 @@ async def upload_document(
     with open(saved_path, "wb") as f:
         f.write(content)
 
-    # 5. Record document in metadata registry
+    # 5. Execute full LCEL Ingestion Pipeline (load -> clean -> chunk -> store)
+    try:
+        ingestion_result = run_ingestion_pipeline(
+            file_path=str(saved_path),
+            doc_id=doc_id,
+            content_hash=content_hash,
+        )
+        chunk_count = ingestion_result.get("chunk_count", 0)
+    except Exception as exc:
+        # Cleanup saved file on ingestion failure
+        if saved_path.exists():
+            os.remove(saved_path)
+        logger.error(f"Ingestion pipeline failed for '{filename}': {exc}")
+        if isinstance(exc, (IngestionError, ValidationError)):
+            raise
+        raise IngestionError(f"Ingestion pipeline failed: {exc}") from exc
+
+    # 6. Record document in metadata registry
     registry = _load_registry()
     doc_entry = {
         "doc_id": doc_id,
@@ -121,20 +143,20 @@ async def upload_document(
         "source_type": source_type,
         "content_hash": content_hash,
         "file_size": len(content),
-        "chunk_count": 0,  # Will be populated as ingestion pipeline stages are wired
+        "chunk_count": chunk_count,
         "ingested_at": ingested_at,
         "status": "ingested",
     }
     registry[doc_id] = doc_entry
     _save_registry(registry)
 
-    logger.info(f"Document uploaded successfully: {filename} (doc_id: {doc_id})")
+    logger.info(f"Document uploaded and indexed successfully: {filename} ({chunk_count} chunks, doc_id: {doc_id})")
 
     return DocumentUploadResponse(
         doc_id=doc_id,
         filename=filename,
         status="ingested",
-        chunk_count=0,
+        chunk_count=chunk_count,
         source_type=source_type,
         ingested_at=ingested_at,
     )
@@ -212,7 +234,11 @@ async def delete_document(doc_id: str):
     doc_info = registry.pop(doc_id)
     _save_registry(registry)
 
-    # Remove physical file if present
+    # 1. Cascade delete vectors from ChromaDB
+    vector_store = get_vector_store()
+    chunks_removed = vector_store.delete_by_doc_id(doc_id)
+
+    # 2. Remove physical file if present
     saved_path = DOCUMENTS_DIR / doc_info.get("saved_filename", "")
     if saved_path.exists():
         try:
@@ -220,17 +246,18 @@ async def delete_document(doc_id: str):
         except Exception as exc:
             logger.warning(f"Could not remove physical file {saved_path}: {exc}")
 
-    logger.info(f"Document deleted: {doc_id}")
+    logger.info(f"Document deleted: {doc_id} ({chunks_removed} vectors removed)")
     return DocumentDeleteResponse(
         doc_id=doc_id,
         status="deleted",
-        chunks_removed=doc_info.get("chunk_count", 0),
+        chunks_removed=chunks_removed,
     )
+
 
 
 @router.post(
     "/query",
-    response_model=QueryResponse,
+    response_model=Union[QueryResponse, RefusalResponse],
     summary="Ask a question against ingested documents",
     responses={
         400: {"model": ErrorResponse, "description": "Invalid query payload"},
@@ -238,12 +265,26 @@ async def delete_document(doc_id: str):
     },
 )
 async def query_documents(payload: QueryRequest):
-    """Ask a question and receive an answer with verifiable citations."""
+    """Ask a question and receive an answer with verifiable citations or a structured refusal."""
     if not payload.query.strip():
         raise ValidationError("Query cannot be empty.", error_code="EMPTY_QUERY", status_code=400)
 
-    return QueryResponse(
-        status="answered",
-        answer="Query endpoint ready.",
-        citations=[],
-    )
+    if payload.stream:
+        return StreamingResponse(
+            stream_query_pipeline(query=payload.query, doc_id=payload.doc_id),
+            media_type="text/event-stream",
+        )
+
+    try:
+        result = run_query_pipeline(
+            query=payload.query,
+            doc_id=payload.doc_id,
+        )
+        return result
+    except Exception as exc:
+        logger.error(f"Query processing failed: {exc}")
+        if isinstance(exc, ValidationError):
+            raise
+        raise
+
+
