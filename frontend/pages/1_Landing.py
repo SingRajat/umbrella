@@ -96,5 +96,5 @@ def render_landing_page():
         )
 
 
-if __name__ == "__main__":
-    render_landing_page()
+render_landing_page()
+
