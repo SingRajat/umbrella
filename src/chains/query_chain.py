@@ -1,4 +1,5 @@
 """LCEL query and generation pipeline chain with streaming support."""
+
 import json
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -15,6 +16,31 @@ from src.storage.chroma import ChromaVectorStore, RetrievedChunk, get_vector_sto
 
 logger = get_logger("umbrella.chains.query")
 
+def extract_token_usage(ai_message: Any)-> Optional[Dict[str, Any]]:
+    ## Extract metadata from AImessage to track token_usage
+    if not ai_message:
+        return None
+    usage_meta= getattr(ai_message, "usage_metadata", None)
+    if isinstance(usage_meta, dict):
+        return{
+            "prompt_tokens": int(usage_meta.get("input_tokens", 0)),
+            "completion_tokens": int(usage_meta.get("output_tokens", 0)),
+            "total_tokens": int(usage_meta.get("total_tokens", 0))
+        }
+    
+    resp_meta= getattr(ai_message, "response_metadata", {})
+    if isinstance(resp_meta, dict):
+        token_usage= resp_meta.get("token_usage") or resp_meta.get("usage")
+        if isinstance(token_usage, dict):
+            prompt = int(token_usage.get("prompt_tokens", token_usage.get("input_tokens", 0)))
+            completion = int(token_usage.get("completion_tokens", token_usage.get("output_tokens", 0)))
+            total= int(token_usage.get("total_tokens", prompt + completion))
+            return {
+                "prompt_tokens": prompt,
+                "completion_tokens": completion,
+                "total_tokens": total,
+            }
+    return None
 
 def run_query_pipeline(
     query: str,
@@ -46,26 +72,31 @@ def run_query_pipeline(
             status="refused",
             reason=val_result.reason or "Retrieved evidence is insufficient.",
             retrieved_chunk_ids=[c.chunk_id for c in retrieved_chunks],
+            token_usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             query=query,
         )
 
     usable_chunks = val_result.valid_chunks
 
     # Step 3: Context Formatting & Prompt Construction
+    ## No stroutputparser to preserve AImessage metadata
     context_text = format_context_blocks(usable_chunks)
     prompt_template = get_rag_prompt_template()
 
     # Step 4: LCEL Generation Chain
-    generation_chain = prompt_template | chat_llm | StrOutputParser()
+    generation_chain = prompt_template | chat_llm 
 
     try:
-        raw_answer = generate_with_retry(
+        ai_message = generate_with_retry(
             generation_chain,
             {"context": context_text, "question": query},
         )
     except Exception as exc:
         logger.error(f"Error during LLM generation: {exc}")
         raise
+
+    raw_answer=ai_message.content if hasattr(ai_message, "content") else str(ai_message)
+    token_usage= extract_token_usage(ai_message)
 
     # Step 5: Output & Citation Validation
     output_result = validate_generated_output(raw_answer, usable_chunks)
@@ -75,6 +106,7 @@ def run_query_pipeline(
             status="refused",
             reason=output_result.refusal_reason or "Context insufficient.",
             retrieved_chunk_ids=[c.chunk_id for c in usable_chunks],
+            token_usage=token_usage,
             query=query,
         )
 
@@ -82,6 +114,7 @@ def run_query_pipeline(
         status="answered",
         answer=output_result.answer,
         citations=output_result.citations,
+        token_usage=token_usage,
     )
 
 
@@ -119,12 +152,17 @@ def stream_query_pipeline(
     context_text = format_context_blocks(usable_chunks)
     prompt_template = get_rag_prompt_template()
 
-    generation_chain = prompt_template | chat_llm | StrOutputParser()
+    generation_chain = prompt_template | chat_llm 
 
     full_text = []
-    for token in generation_chain.stream({"context": context_text, "question": query}):
-        full_text.append(token)
-        token_event = {"type": "token", "content": token}
+    token_usage= None
+    for chunk in generation_chain.stream({"context": context_text, "question": query}):
+        token_text = chunk.content if hasattr(chunk, "content") else str(chunk)
+        full_text.append(token_text)
+        usage = extract_token_usage(chunk)
+        if usage:
+            token_usage=usage
+        token_event = {"type": "token", "content": token_text}
         yield f"data: {json.dumps(token_event)}\n\n"
 
     # Validate full output and emit citations
@@ -145,5 +183,11 @@ def stream_query_pipeline(
         ]
         citation_event = {"type": "citations", "citations": citations_payload}
         yield f"data: {json.dumps(citation_event)}\n\n"
+    
+    if token_usage:
+        usage_event= {"type": "token_usage", **token_usage}
+        yield f"data: {json.dumps(usage_event)}\n\n"
+    yield 'data: {"type": "done"}\n\n'
 
-    yield "data: {\"type\": \"done\"}\n\n"
+
+    

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     # LLM Settings
     groq_api_key: str = ""
     groq_model: str = "qwen/qwen3.8-27b"
+    eval_model: str = "openai/gpt-oss-120b"
     temperature: float = 0.7
 
     # RAG Settings
@@ -29,6 +30,7 @@ class Settings(BaseSettings):
     # API & Security
     max_upload_size_mb: int = 25
     rate_limit_rpm: int = 60
+    trust_proxy: bool = False
     strict_refusal: bool = True
     log_level: str = "INFO"
 

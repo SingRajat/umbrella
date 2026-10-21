@@ -45,8 +45,13 @@ def _load_registry() -> Dict[str, dict]:
     try:
         with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
-        return {}
+    except Exception as exc:
+        logger.error(f"CRITICAL: Failed to load document registry: {exc}")
+        raise IngestionError(
+            f"Document registry is corrupt or unreadable: {exc}",
+            error_code="REGISTRY_CORRUPT",
+            status_code=500,
+        ) from exc
 
 
 def _save_registry(registry: Dict[str, dict]):
@@ -76,15 +81,19 @@ async def health_check():
         413: {"model": ErrorResponse, "description": "File exceeds upload limit"},
     },
 )
-async def upload_document(
+def upload_document(
     file: UploadFile = File(...),
 ):
     """Upload and ingest PDF, DOCX, TXT, or MD documents."""
     settings = get_settings()
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
 
-    # 1. Validate filename and extension
-    filename = file.filename or ""
+    # 1. Validate and sanitize filename (strip traversal components)
+    raw_filename = file.filename or ""
+    filename = Path(raw_filename).name.strip()
+    if not filename or filename in (".", ".."):
+        raise ValidationError("Invalid filename.", error_code="INVALID_FILENAME", status_code=400)
+
     allowed_extensions = (".pdf", ".docx", ".txt", ".md")
     if not filename.lower().endswith(allowed_extensions):
         raise ValidationError(
@@ -93,31 +102,53 @@ async def upload_document(
             status_code=400,
         )
 
-    # 2. Validate file size and non-empty content
-    content = await file.read()
-    if len(content) == 0:
-        raise ValidationError("Uploaded file is empty.", error_code="EMPTY_FILE", status_code=400)
-    if len(content) > max_bytes:
+    # 2. Early rejection via Content-Length if present
+    content_length = getattr(file, "size", None)
+    if content_length is not None and content_length > max_bytes:
         raise ValidationError(
             f"File exceeds maximum allowed size of {settings.max_upload_size_mb} MB.",
             error_code="FILE_TOO_LARGE",
             status_code=413,
         )
 
-    # 3. Compute SHA-256 content hash for deduplication/idempotency tracking
+    # 3. Stream-read with hard cap to prevent unbounded memory allocation
+    chunks = []
+    bytes_read = 0
+    chunk_size = 64 * 1024
+    while True:
+        chunk = file.file.read(chunk_size)
+        if not chunk:
+            break
+        bytes_read += len(chunk)
+        if bytes_read > max_bytes:
+            raise ValidationError(
+                f"File exceeds maximum allowed size of {settings.max_upload_size_mb} MB.",
+                error_code="FILE_TOO_LARGE",
+                status_code=413,
+            )
+        chunks.append(chunk)
+
+    content = b"".join(chunks)
+    if len(content) == 0:
+        raise ValidationError("Uploaded file is empty.", error_code="EMPTY_FILE", status_code=400)
+
+    # 4. Compute SHA-256 content hash for deduplication/idempotency tracking
     content_hash = hashlib.sha256(content).hexdigest()
     doc_id = str(uuid.uuid4())
     source_type = filename.split(".")[-1].lower()
     ingested_at = datetime.now(timezone.utc).isoformat()
 
-    # 4. Save raw file to data/documents/
+    # 5. Save raw file to data/documents/ with traversal check
     DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
     saved_filename = f"{doc_id}_{filename}"
     saved_path = DOCUMENTS_DIR / saved_filename
+    if not saved_path.resolve().is_relative_to(DOCUMENTS_DIR.resolve()):
+        raise ValidationError("Invalid file path.", error_code="PATH_TRAVERSAL", status_code=400)
+
     with open(saved_path, "wb") as f:
         f.write(content)
 
-    # 5. Execute full LCEL Ingestion Pipeline (load -> clean -> chunk -> store)
+    # 6. Execute full LCEL Ingestion Pipeline (load -> clean -> chunk -> store)
     try:
         ingestion_result = run_ingestion_pipeline(
             file_path=str(saved_path),
@@ -134,7 +165,7 @@ async def upload_document(
             raise
         raise IngestionError(f"Ingestion pipeline failed: {exc}") from exc
 
-    # 6. Record document in metadata registry
+    # 7. Record document in metadata registry
     registry = _load_registry()
     doc_entry = {
         "doc_id": doc_id,
@@ -167,7 +198,7 @@ async def upload_document(
     response_model=DocumentListResponse,
     summary="List ingested documents",
 )
-async def list_documents(
+def list_documents(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
 ):
@@ -202,7 +233,7 @@ async def list_documents(
     summary="Get document details",
     responses={404: {"model": ErrorResponse, "description": "Document not found"}},
 )
-async def get_document(doc_id: str):
+def get_document(doc_id: str):
     """Retrieve metadata for a specific document by its doc_id."""
     registry = _load_registry()
     if doc_id not in registry:
@@ -225,16 +256,15 @@ async def get_document(doc_id: str):
     summary="Delete a document",
     responses={404: {"model": ErrorResponse, "description": "Document not found"}},
 )
-async def delete_document(doc_id: str):
+def delete_document(doc_id: str):
     """Delete a document and cascade remove its stored file and vector entries."""
     registry = _load_registry()
     if doc_id not in registry:
         raise ValidationError(f"Document with ID '{doc_id}' not found.", error_code="DOCUMENT_NOT_FOUND", status_code=404)
 
-    doc_info = registry.pop(doc_id)
-    _save_registry(registry)
+    doc_info = registry[doc_id]
 
-    # 1. Cascade delete vectors from ChromaDB
+    # 1. Cascade delete vectors from ChromaDB first
     vector_store = get_vector_store()
     chunks_removed = vector_store.delete_by_doc_id(doc_id)
 
@@ -245,6 +275,10 @@ async def delete_document(doc_id: str):
             os.remove(saved_path)
         except Exception as exc:
             logger.warning(f"Could not remove physical file {saved_path}: {exc}")
+
+    # 3. Remove from registry LAST after vector and file cleanup succeeds
+    registry.pop(doc_id)
+    _save_registry(registry)
 
     logger.info(f"Document deleted: {doc_id} ({chunks_removed} vectors removed)")
     return DocumentDeleteResponse(
@@ -264,7 +298,7 @@ async def delete_document(doc_id: str):
         404: {"model": ErrorResponse, "description": "No documents ingested"},
     },
 )
-async def query_documents(payload: QueryRequest):
+def query_documents(payload: QueryRequest):
     """Ask a question and receive an answer with verifiable citations or a structured refusal."""
     if not payload.query.strip():
         raise ValidationError("Query cannot be empty.", error_code="EMPTY_QUERY", status_code=400)

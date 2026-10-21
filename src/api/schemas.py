@@ -1,5 +1,5 @@
 """Pydantic schemas for API request and response validation."""
-from typing import List, Optional, Union
+from typing import List, Dict, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -79,6 +79,7 @@ class QueryResponse(BaseModel):
     status: str = "answered"
     answer: str
     citations: List[CitationItem] = Field(default_factory=list)
+    token_usage: Optional[Dict[str, int]] = None
 
 
 class RefusalResponse(BaseModel):
@@ -86,6 +87,7 @@ class RefusalResponse(BaseModel):
     status: str = "refused"
     reason: str
     retrieved_chunk_ids: List[str] = Field(default_factory=list)
+    token_usage: Optional[Dict[str, int]] = None
     query: str
 
 

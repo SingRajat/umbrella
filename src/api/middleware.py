@@ -1,7 +1,7 @@
 """API Middleware for Rate Limiting, Security Headers, and Request Auditing."""
 import time
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -21,6 +21,13 @@ class RateLimiter:
         self.requests_per_minute = requests_per_minute
         self.window_seconds = 60
         self._clients: Dict[str, List[float]] = defaultdict(list)
+        self._last_cleanup = time.time()
+
+    def _cleanup_stale_clients(self, window_start: float):
+        """Remove inactive client buckets to prevent memory leaks."""
+        stale_ips = [ip for ip, timestamps in self._clients.items() if not timestamps or timestamps[-1] <= window_start]
+        for ip in stale_ips:
+            del self._clients[ip]
 
     def is_allowed(self, client_ip: str) -> Tuple[bool, int, int]:
         """
@@ -30,15 +37,21 @@ class RateLimiter:
         now = time.time()
         window_start = now - self.window_seconds
 
-        # Prune timestamps outside the current 60s window
-        timestamps = self._clients[client_ip]
-        self._clients[client_ip] = [ts for ts in timestamps if ts > window_start]
+        # Periodically evict inactive client IPs every 5 minutes
+        if now - self._last_cleanup > 300:
+            self._cleanup_stale_clients(window_start)
+            self._last_cleanup = now
 
-        current_count = len(self._clients[client_ip])
+        # Prune timestamps outside the current window for this client
+        timestamps = self._clients[client_ip]
+        active = [ts for ts in timestamps if ts > window_start]
+        self._clients[client_ip] = active
+
+        current_count = len(active)
         remaining = max(0, self.requests_per_minute - current_count)
 
         if current_count >= self.requests_per_minute:
-            oldest = self._clients[client_ip][0]
+            oldest = active[0]
             retry_after = int(self.window_seconds - (now - oldest)) + 1
             return False, 0, max(1, retry_after)
 
@@ -58,10 +71,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "127.0.0.1"
-        # Check X-Forwarded-For if behind a reverse proxy
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            client_ip = forwarded.split(",")[0].strip()
+        # Only trust X-Forwarded-For if explicitly configured behind a reverse proxy
+        if get_settings().trust_proxy:
+            forwarded = request.headers.get("x-forwarded-for")
+            if forwarded:
+                client_ip = forwarded.split(",")[0].strip()
 
         limit = _global_rate_limiter.requests_per_minute
         is_allowed, remaining, retry_after = _global_rate_limiter.is_allowed(client_ip)
