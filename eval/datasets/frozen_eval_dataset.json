@@ -1,0 +1,686 @@
+[
+  {
+    "id": "eval_001",
+    "original_id": "candidate_001",
+    "question": "Where can Dockerized apps run?",
+    "ground_truth": "Dockerized apps can run on colleagues' OS X and Windows laptops, QA servers running Ubuntu in the cloud, and production data center VMs running Red Hat.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Why Docker",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# Docker Cheat Sheet\n<!-- Source: wsargent/docker-cheat-sheet | License: MIT -->\n\n# Docker Cheat Sheet\n\n**Want to improve this cheat sheet?  See the [Contributing](#contributing) section!**\n\n## Table of Contents\n\n* [Why Docker](#why-docker)\n* [Prerequisites](#prerequisites)\n* [Installation](#installation)\n* [Containers](#containers)\n* [Images](#images)\n* [Networks](#networks)\n* [Registry and Repository](#registry--repository)\n* [Dockerfile](#dockerfile)\n* [Layers](#layers)\n* [Links](#links)\n* [Volumes](#volumes)\n* [Exposing Ports](#exposing-ports)\n* [Best Practices](#best-practices)\n* [Docker-Compose](#docker-compose)\n* [Security](#security)\n* [Tips](#tips)\n* [Contributing](#contributing)\n\n## Why Docker\n\n\"With Docker, developers can build any app in any language using any toolchain. \u201cDockerized\u201d apps are completely portable and can run anywhere - colleagues\u2019 OS X and Windows laptops, QA servers running Ubuntu in the cloud, and production data center VMs running Red Hat."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "qwen/qwen3.8-27b"
+  },
+  {
+    "id": "eval_002",
+    "original_id": "candidate_002",
+    "question": "what is docker renam?",
+    "ground_truth": "The docker rename command allows the container to be renamed.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Lifecycle",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "Get the server version:\n\n```console\n$ docker version --format '{{.Server.Version}}'\n1.8.0\n```\n\nYou can also dump raw JSON data:\n\n```console\n$ docker version --format '{{json .}}'\n{\"Client\":{\"Version\":\"1.8.0\",\"ApiVersion\":\"1.20\",\"GitCommit\":\"f5bae0a\",\"GoVersion\":\"go1.4.2\",\"Os\":\"linux\",\"Arch\":\"am\"}\n```\n\n## Containers\n\n[Your basic isolated Docker process](http://etherealmind.com/basics-docker-containers-hypervisors-coreos/). Containers are to Virtual Machines as threads are to processes. Or you can think of them as chroots on steroids.\n\n### Lifecycle\n\n* [`docker create`](https://docs.docker.com/engine/reference/commandline/create) creates a container but does not start it.\n* [`docker rename`](https://docs.docker.com/engine/reference/commandline/rename/) allows the container to be renamed.\n* [`docker run`](https://docs.docker.com/engine/reference/commandline/run) creates and starts a container in one operation.\n* [`docker rm`](https://docs.docker.com/engine/reference/commandline/rm) deletes a container.\n* [`docker update`](https://docs.docker.com/engine/reference/commandline/update/) updates a container's resource limits."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_003",
+    "original_id": "candidate_003",
+    "question": "hey what does docker stats do for me when i check my containers",
+    "ground_truth": "docker stats shows containers' resource usage statistics.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Import / Export",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "### Info\n\n* [`docker ps`](https://docs.docker.com/engine/reference/commandline/ps) shows running containers.\n* [`docker logs`](https://docs.docker.com/engine/reference/commandline/logs) gets logs from container.  (You can use a custom log driver, but logs is only available for `json-file` and `journald` in 1.10).\n* [`docker inspect`](https://docs.docker.com/engine/reference/commandline/inspect) looks at all the info on a container (including IP address).\n* [`docker events`](https://docs.docker.com/engine/reference/commandline/events) gets events from container.\n* [`docker port`](https://docs.docker.com/engine/reference/commandline/port) shows public facing port of container.\n* [`docker top`](https://docs.docker.com/engine/reference/commandline/top) shows running processes in container.\n* [`docker stats`](https://docs.docker.com/engine/reference/commandline/stats) shows containers' resource usage statistics.\n* [`docker diff`](https://docs.docker.com/engine/reference/commandline/diff) shows changed files in the container's FS.\n\n`docker ps -a` shows running and stopped containers.\n\n`docker stats --all` shows a list of all containers, default shows just running.\n\n### Import / Export"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_004",
+    "original_id": "candidate_004",
+    "question": "How do I use the dockr command to pull an image from a registry to my local machine?",
+    "ground_truth": "You can use the `docker pull` command to pull an image from a registry to your local machine.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Dockerfile",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "* [`docker login`](https://docs.docker.com/engine/reference/commandline/login) to login to a registry.\n* [`docker logout`](https://docs.docker.com/engine/reference/commandline/logout) to logout from a registry.\n* [`docker search`](https://docs.docker.com/engine/reference/commandline/search) searches registry for image.\n* [`docker pull`](https://docs.docker.com/engine/reference/commandline/pull) pulls an image from registry to local machine.\n* [`docker push`](https://docs.docker.com/engine/reference/commandline/push) pushes an image to the registry from local machine.\n\n### Run local registry\n\nYou can run a local registry by using the [docker distribution](https://github.com/docker/distribution) project and looking at the [local deploy](https://github.com/docker/docker.github.io/blob/master/registry/deploying.md) instructions.\n\nAlso see the [mailing list](https://groups.google.com/a/dockerproject.org/forum/#!forum/distribution).\n\n## Dockerfile\n\n[The configuration file](https://docs.docker.com/engine/reference/builder/). Sets up a Docker container when you run `docker build` on it. Vastly preferable to `docker commit`."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_005",
+    "original_id": "candidate_006",
+    "question": "docker container linking environment variables and security best practices",
+    "ground_truth": "When using Docker container linking, such as creating a container named LINKED linked to CONTAINER with an alias, the exposed ports and aliases of the target container appear in the linked container as environment variables like $ALIAS_PORT_1337_TCP_PORT and $ALIAS_PORT_1337_TCP_ADDR. Regarding Docker security, it is recommended to run Docker inside a virtual machine and use tools like AppArmor, seccomp, or SELinux to limit container permissions. Additionally, Docker image IDs are considered sensitive information and should be treated like passwords to avoid exposure.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Security Tips",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n```\nEXPOSE 1337\n```\n\nThen if we create another container called LINKED like so:\n\n```sh\ndocker run -d --link CONTAINER:ALIAS --name LINKED user/wordpress\n```\n\nThen the exposed ports and aliases of CONTAINER will show up in LINKED with the following environment variables:\n\n```sh\n$ALIAS_PORT_1337_TCP_PORT\n$ALIAS_PORT_1337_TCP_ADDR\n```\n\nAnd you can connect to it that way.\n\nTo delete links, use `docker rm --link`.\n\nGenerally, linking between docker services is a subset of \"service discovery\", a big problem if you're planning to use Docker at scale in production.  Please read [The Docker Ecosystem: Service Discovery and Distributed Configuration Stores](https://www.digitalocean.com/community/tutorials/the-docker-ecosystem-service-discovery-and-distributed-configuration-stores) for more info.\n\n## Volumes",
+      "<2-hop>\n\n### Security Tips\n\nFor greatest security, you want to run Docker inside a virtual machine. This is straight from the Docker Security Team Lead -- [slides](http://www.slideshare.net/jpetazzo/linux-containers-lxc-docker-and-security) / [notes](http://www.projectatomic.io/blog/2014/08/is-it-safe-a-look-at-docker-and-security-from-linuxcon/). Then, run with AppArmor / seccomp / SELinux / grsec etc to [limit the container permissions](http://linux-audit.com/docker-security-best-practices-for-your-vessel-and-containers/). See the [Docker 1.10 security features](https://blog.docker.com/2016/02/docker-engine-1-10-security/) for more details.\n\nDocker image ids are [sensitive information](https://medium.com/@quayio/your-docker-image-ids-are-secrets-and-its-time-you-treated-them-that-way-f55e9f14c1a4) and should not be exposed to the outside world. Treat them like passwords.\n\nSee the [Docker Security Cheat Sheet](https://github.com/konstruktoid/Docker/blob/master/Security/CheatSheet.adoc) by [Thomas Sj\u00f6gren](https://github.com/konstruktoid): some good stuff about container hardening in there."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_006",
+    "original_id": "candidate_009",
+    "question": "what os is in the json for docker version on linux",
+    "ground_truth": "The raw JSON data dumped from the docker version command shows the Os field is set to linux.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Lifecycle",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\nGet the server version:\n\n```console\n$ docker version --format '{{.Server.Version}}'\n1.8.0\n```\n\nYou can also dump raw JSON data:\n\n```console\n$ docker version --format '{{json .}}'\n{\"Client\":{\"Version\":\"1.8.0\",\"ApiVersion\":\"1.20\",\"GitCommit\":\"f5bae0a\",\"GoVersion\":\"go1.4.2\",\"Os\":\"linux\",\"Arch\":\"am\"}\n```\n\n## Containers\n\n[Your basic isolated Docker process](http://etherealmind.com/basics-docker-containers-hypervisors-coreos/). Containers are to Virtual Machines as threads are to processes. Or you can think of them as chroots on steroids.\n\n### Lifecycle\n\n* [`docker create`](https://docs.docker.com/engine/reference/commandline/create) creates a container but does not start it.\n* [`docker rename`](https://docs.docker.com/engine/reference/commandline/rename/) allows the container to be renamed.\n* [`docker run`](https://docs.docker.com/engine/reference/commandline/run) creates and starts a container in one operation.\n* [`docker rm`](https://docs.docker.com/engine/reference/commandline/rm) deletes a container.\n* [`docker update`](https://docs.docker.com/engine/reference/commandline/update/) updates a container's resource limits."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_007",
+    "original_id": "candidate_010",
+    "question": "what is the docker rm command for?",
+    "ground_truth": "The docker rm command is used to delete a container.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Lifecycle",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\nGet the server version:\n\n```console\n$ docker version --format '{{.Server.Version}}'\n1.8.0\n```\n\nYou can also dump raw JSON data:\n\n```console\n$ docker version --format '{{json .}}'\n{\"Client\":{\"Version\":\"1.8.0\",\"ApiVersion\":\"1.20\",\"GitCommit\":\"f5bae0a\",\"GoVersion\":\"go1.4.2\",\"Os\":\"linux\",\"Arch\":\"am\"}\n```\n\n## Containers\n\n[Your basic isolated Docker process](http://etherealmind.com/basics-docker-containers-hypervisors-coreos/). Containers are to Virtual Machines as threads are to processes. Or you can think of them as chroots on steroids.\n\n### Lifecycle\n\n* [`docker create`](https://docs.docker.com/engine/reference/commandline/create) creates a container but does not start it.\n* [`docker rename`](https://docs.docker.com/engine/reference/commandline/rename/) allows the container to be renamed.\n* [`docker run`](https://docs.docker.com/engine/reference/commandline/run) creates and starts a container in one operation.\n* [`docker rm`](https://docs.docker.com/engine/reference/commandline/rm) deletes a container.\n* [`docker update`](https://docs.docker.com/engine/reference/commandline/update/) updates a container's resource limits."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_008",
+    "original_id": "candidate_012",
+    "question": "Which command retrieves logs from a container?",
+    "ground_truth": "The `docker logs` command is used to get logs from a container.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Import / Export",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n### Info\n\n* [`docker ps`](https://docs.docker.com/engine/reference/commandline/ps) shows running containers.\n* [`docker logs`](https://docs.docker.com/engine/reference/commandline/logs) gets logs from container.  (You can use a custom log driver, but logs is only available for `json-file` and `journald` in 1.10).\n* [`docker inspect`](https://docs.docker.com/engine/reference/commandline/inspect) looks at all the info on a container (including IP address).\n* [`docker events`](https://docs.docker.com/engine/reference/commandline/events) gets events from container.\n* [`docker port`](https://docs.docker.com/engine/reference/commandline/port) shows public facing port of container.\n* [`docker top`](https://docs.docker.com/engine/reference/commandline/top) shows running processes in container.\n* [`docker stats`](https://docs.docker.com/engine/reference/commandline/stats) shows containers' resource usage statistics.\n* [`docker diff`](https://docs.docker.com/engine/reference/commandline/diff) shows changed files in the container's FS.\n\n`docker ps -a` shows running and stopped containers.\n\n`docker stats --all` shows a list of all containers, default shows just running.\n\n### Import / Export"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_009",
+    "original_id": "candidate_013",
+    "question": "Can you explane wha the Espanyol link does in the Git Fligt Ruls documntation and why it is listed alongside English, \u0420\u0443\u0441\u0441\u043a\u0438\u0439, and other languages?",
+    "ground_truth": "The Git Flight Rules page includes a language selection line that lists links to versions of the documentation in multiple languages, including Espa\u00f1ol, which points to README_es.md.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "Conventions for this document",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# Git Flight Rules\n<!-- Source: k88hudson/git-flight-rules | License: MIT -->\n\n# Flight rules for Git\n\n\ud83c\udf0d\n*[English](README.md) \u2219 [Espa\u00f1ol](README_es.md)  \u2219  [\u0420\u0443\u0441\u0441\u043a\u0438\u0439](README_ru.md) \u2219 [\u7e41\u9ad4\u4e2d\u6587](README_zh-TW.md) \u2219 [\u7b80\u4f53\u4e2d\u6587](README_zh-CN.md) \u2219 [\ud55c\uad6d\uc5b4](README_kr.md)  \u2219  [Ti\u1ebfng Vi\u1ec7t](README_vi.md) \u2219 [Fran\u00e7ais](README_fr.md) \u2219 [\u65e5\u672c\u8a9e](README_ja.md)*\n\n#### What are \"flight rules\"?\n\nA guide for astronauts (now, programmers using Git) about what to do when things go wrong.\n\n>  *Flight Rules* are the hard-earned body of knowledge recorded in manuals that list, step-by-step, what to do if X occurs, and why. Essentially, they are extremely detailed, scenario-specific standard operating procedures. [...]\n\n> NASA has been capturing our missteps, disasters and solutions since the early 1960s, when Mercury-era ground teams first started gathering \"lessons learned\" into a compendium that now lists thousands of problematic situations, from engine failure to busted hatch handles to computer glitches, and their solutions.\n\n&mdash; Chris Hadfield, *An Astronaut's Guide to Life on Earth*.\n\n#### Conventions for this document"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_010",
+    "original_id": "candidate_014",
+    "question": "As a Version Control Engineer, how should I handle code review feedback after pushing my changes and creating a pull request?",
+    "ground_truth": "After you have pushed your changes (normally in a branch) to the remote named `origin` and created a pull request on your Git host (such as GitHub), you should respond to any code review feedback. If you prefer not to rely on third\u2011party sites, you can also suggest code changes by generating patches with `git format-patch`.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "Suggesting code via patches",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "From origin, you can read and write. From upstream, you can only read.\n\nWhen you've finished making whatever changes you like, push your changes (normally in a branch) to the remote named `origin`. If you're on a branch, you could use `--set-upstream` to avoid specifying the remote tracking branch on every future push using this branch. For instance:\n\n```sh\n$ (feature/my-feature) git push --set-upstream origin feature/my-feature\n```\n\nThere is no way to suggest a pull request using the CLI using Git (although there are tools, like [hub](https://github.com/github/hub), which will do this for you). So, if you're ready to make a pull request, go to your GitHub (or another Git host) and create a new pull request. Note that your host automatically links the original and forked repositories.\n\nAfter all of this, do not forget to respond to any code review feedback.\n\n#### Suggesting code via patches\n\nAnother approach to suggesting code changes that doesn't rely on third party sites such as Github is to use `git format-patch`."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_011",
+    "original_id": "candidate_015",
+    "question": "How can I push a large rewritten Git history to the main branch without getting \"The remote end hung up unexpectedly\"?",
+    "ground_truth": "If a push after rewriting the entire repository history is too large and returns the error \"The remote end hung up unexpectedly\", first increase the Git post buffer:\n```\n(main)$ git config http.postBuffer 524288000\n(main)$ git push --force\n```\nIf the error persists, push the history in chunks by specifying a range of commits and the main branch reference:\n```\n(main)$ git push -u origin HEAD~<number>:refs/head/main --force\n```\nIncrease `<number>` until the push succeeds. Once the initial push succeeds, gradually decrease `<number>` until a regular `git push` works without the `--force` flag.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I need to change the content of a commit which is not my last",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "Since you just rewrote the entire git repo history, the `git push` operation may be too large, and return the error `\u201cThe remote end hung up unexpectedly\u201d`. If this happens, you can try increasing the git post buffer:\n```sh\n(main)$ git config http.postBuffer 524288000\n(main)$ git push --force\n```\n\nIf this does not work, you will need to manually push the repo history in chunks of commits. In the command below, try increasing `<number>` until the push operation succeeds.\n```sh\n(main)$ git push -u origin HEAD~<number>:refs/head/main --force\n```\nOnce the push operation succeeds the first time, decrease `<number>` gradually until a conventional `git push` succeeds.\n\n<a name=\"change-content-of-commit-not-my-last\"></a>\n### I need to change the content of a commit which is not my last"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_012",
+    "original_id": "candidate_016",
+    "question": "Git Flight Engineer: How can I restore a branch that I accidentally deleted after checking out the main branch, using reflog to locate the commit and recreate the branch?",
+    "ground_truth": "After you switch back to the main branch and delete your feature branch, you can use the reflog to find the commit that belonged to the deleted branch. Run `git reflog` while on main; the output will list recent actions, including entries like:\n```\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n```\nIdentify the commit hash for the deleted branch (e.g., `4e3cd85`). Then recreate the branch and point it at that commit:\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n```\nThe branch is restored and the files (`README.md`, `foo.txt`) are back in the working directory.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "foo.txt added\n\ncommit 69204cdf0acbab201619d95ad8295928e7f411d5\nAuthor: Kate Hudson <katehudson@example.com>\nDate:   Tue Jul 29 13:14:46 2014 -0400\n\n    Fixes #6: Force pushing after amending commits\n```\n\nNow we're switching back to main and 'accidentally' removing our branch.\n\n```sh\n(my-branch)$ git checkout main\nSwitched to branch 'main'\nYour branch is up-to-date with 'origin/main'.\n(main)$ git branch -D my-branch\nDeleted branch my-branch (was 4e3cd85).\n(main)$ echo oh noes, deleted my branch!\noh noes, deleted my branch!\n```\n\nAt this point you should get familiar with 'reflog', an upgraded logger. It stores the history of all the action in the repo.\n\n```\n(main)$ git reflog\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n69204cd HEAD@{2}: checkout: moving from main to my-branch\n```\n\nAs you can see we have commit hash from our deleted branch. Let's see if we can restore our deleted branch.\n\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n(my-branch-help)$ ls\nREADME.md foo.txt\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_013",
+    "original_id": "candidate_017",
+    "question": "How can I serach commits by authr and revover a delted branch?",
+    "ground_truth": "To find commits by a specific author, use the author filter from the first context segment:\n```\n$ git log --author=<name or email>\n```\nThis lists all commits whose author matches the given name or email. \nIf you later delete a branch, you can recover it by locating the commit hash of the lost branch in the reflog (second context segment):\n```\n$ git reflog\n```\nIdentify the hash (e.g., `4e3cd85`) that corresponds to the last commit on the deleted branch. Then recreate the branch and reset it to that commit:\n```\n$ git checkout -b <new-branch-name>\n$ git reset --hard 4e3cd85\n```\nThe branch is restored with its original files (e.g., `foo.txt`).",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I want to view the commit history for a specific function",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n<a name=\"find-by-committer\"></a>\n### I want to find by author/committer\n\nTo find all commits by author/committer you can use:\n\n```sh\n$ git log --author=<name or email>\n$ git log --committer=<name or email>\n```\n\nKeep in mind that author and committer are not the same. The `--author` is the person who originally wrote the code; on the other hand, the `--committer`, is the person who committed the code on behalf of the original author.\n\n### I want to list commits containing specific files\n\nTo find all commits containing a specific file you can use:\n\n```sh\n$ git log -- <path to file>\n```\n\nYou would usually specify an exact path, but you may also use wild cards in the path and file name:\n\n```sh\n$ git log -- **/*.js\n```\n\nWhile using wildcards, it's useful to inform `--name-status` to see the list of committed files:\n\n```sh\n$ git log --name-status -- **/*.js\n```\n\n<a name=\"view-commit-history-for-specific-function\"></a>\n### I want to view the commit history for a specific function\n\nTo trace the evolution of a single function you can use:\n\n```sh\n$ git log -L :FunctionName:FilePath\n```",
+      "<2-hop>\n\nfoo.txt added\n\ncommit 69204cdf0acbab201619d95ad8295928e7f411d5\nAuthor: Kate Hudson <katehudson@example.com>\nDate:   Tue Jul 29 13:14:46 2014 -0400\n\n    Fixes #6: Force pushing after amending commits\n```\n\nNow we're switching back to main and 'accidentally' removing our branch.\n\n```sh\n(my-branch)$ git checkout main\nSwitched to branch 'main'\nYour branch is up-to-date with 'origin/main'.\n(main)$ git branch -D my-branch\nDeleted branch my-branch (was 4e3cd85).\n(main)$ echo oh noes, deleted my branch!\noh noes, deleted my branch!\n```\n\nAt this point you should get familiar with 'reflog', an upgraded logger. It stores the history of all the action in the repo.\n\n```\n(main)$ git reflog\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n69204cd HEAD@{2}: checkout: moving from main to my-branch\n```\n\nAs you can see we have commit hash from our deleted branch. Let's see if we can restore our deleted branch.\n\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n(my-branch-help)$ ls\nREADME.md foo.txt\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_014",
+    "original_id": "candidate_020",
+    "question": "How can I list commits for all JavaScript files using wildcads in git log (for example **/*.js) and then, after I accidently delete a branch, use reflog to locate the lost commit hash and restor the branch?",
+    "ground_truth": "To list commits that affect all JavaScript files you can run a git log command with a wildcard pattern. For example:\n\n```\n$ git log -- **/*.js\n```\n\nIf you also want to see the names and statuses of the files changed in each commit, add the `--name-status` option:\n\n```\n$ git log --name-status -- **/*.js\n```\n\nWhen a branch is accidentally deleted, you can recover the lost commits by using the reflog, which records all actions that moved the HEAD. Run:\n\n```\n$ git reflog\n```\n\nIn the reflog output you will see entries such as:\n\n```\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n```\n\nIdentify the commit hash of the last commit on the deleted branch (e.g., `4e3cd85`). Then create a new branch and reset it to that commit:\n\n```\n$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n```\n\nThe branch is now restored with the same state it had before it was deleted.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I want to view the commit history for a specific function",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n<a name=\"find-by-committer\"></a>\n### I want to find by author/committer\n\nTo find all commits by author/committer you can use:\n\n```sh\n$ git log --author=<name or email>\n$ git log --committer=<name or email>\n```\n\nKeep in mind that author and committer are not the same. The `--author` is the person who originally wrote the code; on the other hand, the `--committer`, is the person who committed the code on behalf of the original author.\n\n### I want to list commits containing specific files\n\nTo find all commits containing a specific file you can use:\n\n```sh\n$ git log -- <path to file>\n```\n\nYou would usually specify an exact path, but you may also use wild cards in the path and file name:\n\n```sh\n$ git log -- **/*.js\n```\n\nWhile using wildcards, it's useful to inform `--name-status` to see the list of committed files:\n\n```sh\n$ git log --name-status -- **/*.js\n```\n\n<a name=\"view-commit-history-for-specific-function\"></a>\n### I want to view the commit history for a specific function\n\nTo trace the evolution of a single function you can use:\n\n```sh\n$ git log -L :FunctionName:FilePath\n```",
+      "<2-hop>\n\nfoo.txt added\n\ncommit 69204cdf0acbab201619d95ad8295928e7f411d5\nAuthor: Kate Hudson <katehudson@example.com>\nDate:   Tue Jul 29 13:14:46 2014 -0400\n\n    Fixes #6: Force pushing after amending commits\n```\n\nNow we're switching back to main and 'accidentally' removing our branch.\n\n```sh\n(my-branch)$ git checkout main\nSwitched to branch 'main'\nYour branch is up-to-date with 'origin/main'.\n(main)$ git branch -D my-branch\nDeleted branch my-branch (was 4e3cd85).\n(main)$ echo oh noes, deleted my branch!\noh noes, deleted my branch!\n```\n\nAt this point you should get familiar with 'reflog', an upgraded logger. It stores the history of all the action in the repo.\n\n```\n(main)$ git reflog\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n69204cd HEAD@{2}: checkout: moving from main to my-branch\n```\n\nAs you can see we have commit hash from our deleted branch. Let's see if we can restore our deleted branch.\n\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n(my-branch-help)$ ls\nREADME.md foo.txt\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_015",
+    "original_id": "candidate_022",
+    "question": "git log --author how to locate commits by a specific author and then push a rewritten repository history without encountering the \"remote end hung up unexpectedly\" error?",
+    "ground_truth": "To locate commits authored by a particular person, use the shell command:\n```\n$ git log --author=<name or email>\n```\nThis lists all commits where the author field matches the given name or email. After identifying the relevant commits, if you have rewritten the repository history and a normal `git push` fails with the error \"The remote end hung up unexpectedly,\" you can mitigate the issue by increasing the HTTP post buffer before pushing:\n```\n$ git config http.postBuffer 524288000\n$ git push --force\n```\nIf the push still fails, push the history in smaller chunks by specifying a range of commits. Replace `<number>` with a count of recent commits to push; increase it until the push succeeds:\n```\n$ git push -u origin HEAD~<number>:refs/head/main --force\n```\nAfter the first successful chunked push, gradually decrease `<number>` until a regular `git push` works without errors.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I need to change the content of a commit which is not my last",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n<a name=\"find-by-committer\"></a>\n### I want to find by author/committer\n\nTo find all commits by author/committer you can use:\n\n```sh\n$ git log --author=<name or email>\n$ git log --committer=<name or email>\n```\n\nKeep in mind that author and committer are not the same. The `--author` is the person who originally wrote the code; on the other hand, the `--committer`, is the person who committed the code on behalf of the original author.\n\n### I want to list commits containing specific files\n\nTo find all commits containing a specific file you can use:\n\n```sh\n$ git log -- <path to file>\n```\n\nYou would usually specify an exact path, but you may also use wild cards in the path and file name:\n\n```sh\n$ git log -- **/*.js\n```\n\nWhile using wildcards, it's useful to inform `--name-status` to see the list of committed files:\n\n```sh\n$ git log --name-status -- **/*.js\n```\n\n<a name=\"view-commit-history-for-specific-function\"></a>\n### I want to view the commit history for a specific function\n\nTo trace the evolution of a single function you can use:\n\n```sh\n$ git log -L :FunctionName:FilePath\n```",
+      "<2-hop>\n\nSince you just rewrote the entire git repo history, the `git push` operation may be too large, and return the error `\u201cThe remote end hung up unexpectedly\u201d`. If this happens, you can try increasing the git post buffer:\n```sh\n(main)$ git config http.postBuffer 524288000\n(main)$ git push --force\n```\n\nIf this does not work, you will need to manually push the repo history in chunks of commits. In the command below, try increasing `<number>` until the push operation succeeds.\n```sh\n(main)$ git push -u origin HEAD~<number>:refs/head/main --force\n```\nOnce the push operation succeeds the first time, decrease `<number>` gradually until a conventional `git push` succeeds.\n\n<a name=\"change-content-of-commit-not-my-last\"></a>\n### I need to change the content of a commit which is not my last"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_016",
+    "original_id": "candidate_023",
+    "question": "How do I resolve \"The remote end hung up unexpectedly\" when pushing a rewritten repository history to origin, and what are the read/write permissions of origin compared to upstream?",
+    "ground_truth": "To fix the \"The remote end hung up unexpectedly\" error after rewriting the entire Git repository history, first increase the HTTP post buffer and attempt a forced push:\n```\ngit config http.postBuffer 524288000\ngit push --force\n```\nIf the push still fails, push the history in smaller chunks by specifying a range of commits relative to the current HEAD and using the remote name **origin**:\n```\ngit push -u origin HEAD~<number>:refs/head/main --force\n```\nIncrease `<number>` until the push succeeds, then gradually decrease it until a normal `git push` works.\n\nRegarding permissions, **origin** allows both read and write operations, so you can push changes to it. In contrast, **upstream** is read\u2011only; you can fetch from it but cannot push directly. When working on a feature branch, you can set the upstream tracking branch to simplify future pushes:\n```\ngit push --set-upstream origin feature/my-feature\n```\nThis configuration ensures subsequent pushes default to the `origin` remote.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "Suggesting code via patches",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\nSince you just rewrote the entire git repo history, the `git push` operation may be too large, and return the error `\u201cThe remote end hung up unexpectedly\u201d`. If this happens, you can try increasing the git post buffer:\n```sh\n(main)$ git config http.postBuffer 524288000\n(main)$ git push --force\n```\n\nIf this does not work, you will need to manually push the repo history in chunks of commits. In the command below, try increasing `<number>` until the push operation succeeds.\n```sh\n(main)$ git push -u origin HEAD~<number>:refs/head/main --force\n```\nOnce the push operation succeeds the first time, decrease `<number>` gradually until a conventional `git push` succeeds.\n\n<a name=\"change-content-of-commit-not-my-last\"></a>\n### I need to change the content of a commit which is not my last",
+      "<2-hop>\n\nFrom origin, you can read and write. From upstream, you can only read.\n\nWhen you've finished making whatever changes you like, push your changes (normally in a branch) to the remote named `origin`. If you're on a branch, you could use `--set-upstream` to avoid specifying the remote tracking branch on every future push using this branch. For instance:\n\n```sh\n$ (feature/my-feature) git push --set-upstream origin feature/my-feature\n```\n\nThere is no way to suggest a pull request using the CLI using Git (although there are tools, like [hub](https://github.com/github/hub), which will do this for you). So, if you're ready to make a pull request, go to your GitHub (or another Git host) and create a new pull request. Note that your host automatically links the original and forked repositories.\n\nAfter all of this, do not forget to respond to any code review feedback.\n\n#### Suggesting code via patches\n\nAnother approach to suggesting code changes that doesn't rely on third party sites such as Github is to use `git format-patch`."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_017",
+    "original_id": "candidate_024",
+    "question": "How can I recover a deleted Git branch after switching back to origin/main, using the reflog entries shown in the repository history?",
+    "ground_truth": "First, after deleting the branch while on 'main' (which is up\u2011to\u2011date with 'origin/main'), you can view the repository's reflog to find the commit hash of the deleted branch. The reflog output shows entries such as:\n\n```\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n69204cd HEAD@{2}: checkout: moving from main to my-branch\n```\n\nThe hash `4e3cd85` corresponds to the last commit on the now\u2011deleted branch. To restore the branch, create a new branch (e.g., `my-branch-help`) and reset it hard to that commit:\n\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n```\n\nAfter the reset, the restored branch contains the files from the original commit (e.g., `README.md` and `foo.txt`). This process leverages the reflog to locate the lost commit and recreates the branch from that point.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\nfoo.txt added\n\ncommit 69204cdf0acbab201619d95ad8295928e7f411d5\nAuthor: Kate Hudson <katehudson@example.com>\nDate:   Tue Jul 29 13:14:46 2014 -0400\n\n    Fixes #6: Force pushing after amending commits\n```\n\nNow we're switching back to main and 'accidentally' removing our branch.\n\n```sh\n(my-branch)$ git checkout main\nSwitched to branch 'main'\nYour branch is up-to-date with 'origin/main'.\n(main)$ git branch -D my-branch\nDeleted branch my-branch (was 4e3cd85).\n(main)$ echo oh noes, deleted my branch!\noh noes, deleted my branch!\n```\n\nAt this point you should get familiar with 'reflog', an upgraded logger. It stores the history of all the action in the repo.\n\n```\n(main)$ git reflog\n69204cd HEAD@{0}: checkout: moving from my-branch to main\n4e3cd85 HEAD@{1}: commit: foo.txt added\n69204cd HEAD@{2}: checkout: moving from main to my-branch\n```\n\nAs you can see we have commit hash from our deleted branch. Let's see if we can restore our deleted branch.\n\n```sh\n(main)$ git checkout -b my-branch-help\nSwitched to a new branch 'my-branch-help'\n(my-branch-help)$ git reset --hard 4e3cd85\nHEAD is now at 4e3cd85 foo.txt added\n(my-branch-help)$ ls\nREADME.md foo.txt\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_018",
+    "original_id": "candidate_025",
+    "question": "What is the awsome .htaccess collection?",
+    "ground_truth": "It is a collection of useful .htaccess snippets, all in one place.",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# .htaccess Snippets\n<!-- Source: phanan/htaccess | License: MIT -->\n\n# .htaccess Snippets [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\nA collection of useful .htaccess snippets, all in one place.\n\n> [!NOTE]\n> `.htaccess` files are for people that do not have rights to edit the main server configuration file. They are intrinsically slower and more complicated than using the main config. Please see the [howto in the httpd documentation](https://httpd.apache.org/docs/current/howto/htaccess.html) for further details.\n\n> [!WARNING]\n> While dropping the snippet into an `.htaccess` file is most of the time sufficient, there are cases when certain modifications might be required. Use at your own risk.\n\n> [!IMPORTANT]\n> These snippets are for Apache 2.4. If you are still using Apache 2.2, check the [`2.2` branch](https://github.com/phanan/htaccess/tree/2.2). For details on the breaking changes between 2.2 and 2.4, see the [upgrading document](https://httpd.apache.org/docs/2.4/upgrading.html) as well as [this issue](https://github.com/phanan/htaccess/issues/2)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_019",
+    "original_id": "candidate_026",
+    "question": "Where can I find .htaccess snippets compatible with Apache 2.2?",
+    "ground_truth": "For Apache 2.2, you should check the `2.2` branch of the repository (https://github.com/phanan/htaccess/tree/2.2).",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# .htaccess Snippets\n<!-- Source: phanan/htaccess | License: MIT -->\n\n# .htaccess Snippets [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\nA collection of useful .htaccess snippets, all in one place.\n\n> [!NOTE]\n> `.htaccess` files are for people that do not have rights to edit the main server configuration file. They are intrinsically slower and more complicated than using the main config. Please see the [howto in the httpd documentation](https://httpd.apache.org/docs/current/howto/htaccess.html) for further details.\n\n> [!WARNING]\n> While dropping the snippet into an `.htaccess` file is most of the time sufficient, there are cases when certain modifications might be required. Use at your own risk.\n\n> [!IMPORTANT]\n> These snippets are for Apache 2.4. If you are still using Apache 2.2, check the [`2.2` branch](https://github.com/phanan/htaccess/tree/2.2). For details on the breaking changes between 2.2 and 2.4, see the [upgrading document](https://httpd.apache.org/docs/2.4/upgrading.html) as well as [this issue](https://github.com/phanan/htaccess/issues/2)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_020",
+    "original_id": "candidate_028",
+    "question": "How does the generic rule handle HTTp?",
+    "ground_truth": "The generic rule checks whether HTTPS is on and captures an optional \u201cs\u201d. It then redirects to http%1://www.%{HTTP_HOST}%{REQUEST_URI}, which results in http:// for non\u2011HTTPS requests and https:// for HTTPS requests, adding the www subdomain for any domain.",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Force non-www",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "## Rewrite and Redirection\nNote: It is assumed that you have `mod_rewrite` installed and enabled.\n\n### Force www\n``` apacheconf\nRewriteEngine on\nRewriteCond %{HTTP_HOST} ^example\\.com [NC]\nRewriteRule ^(.*)$ https://www.example.com/$1 [L,R=301,NC]\n```\n\n### Force www in a Generic Way\n``` apacheconf\nRewriteCond %{HTTP_HOST} !^$\nRewriteCond %{HTTP_HOST} !^www\\. [NC]\nRewriteCond %{HTTPS}s ^on(s)|\nRewriteRule ^ http%1://www.%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n```\nThis works for _any_ domain. [Source](https://stackoverflow.com/questions/4916222/htaccess-how-to-force-www-in-a-generic-way)\n\n### Force non-www\nIt\u2019s [still](https://www.sitepoint.com/domain-www-or-no-www/) [open](https://devcenter.heroku.com/articles/apex-domains) [for](https://yes-www.org/) [debate](https://no-www.org/) whether www or non-www is the way to go, so if you happen to be a fan of bare domains, here you go:\n``` apacheconf\nRewriteEngine on\nRewriteCond %{HTTP_HOST} ^www\\.example\\.com [NC]\nRewriteRule ^(.*)$ https://example.com/$1 [L,R=301]\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_021",
+    "original_id": "candidate_029",
+    "question": "How to redirect oldsite.com to newsite.com while keeping URLs intact?",
+    "ground_truth": "Use a 301 redirect for the entire site, e.g.,\n```apacheconf\nRedirect 301 / https://newsite.com/\n```\nThis will transform URLs like `www.oldsite.com/some/crazy/link.html` into `www.newsite.com/some/crazy/link.html`, preserving the path.",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Deny All Access",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "### Redirect an Entire Site\n``` apacheconf\nRedirect 301 / https://newsite.com/\n```\nThis way does it with links intact. That is `www.oldsite.com/some/crazy/link.html` will become `www.newsite.com/some/crazy/link.html`. This is extremely helpful when you are just \u201cmoving\u201d a site to a new domain. [Source](https://css-tricks.com/snippets/htaccess/301-redirects/)\n\n### Alias \u201cClean\u201d URLs\nThis snippet lets you use \u201cclean\u201d URLs -- those without a PHP extension, e.g. `example.com/users` instead of `example.com/users.php`.\n``` apacheconf\nRewriteEngine On\nRewriteCond %{SCRIPT_FILENAME} !-d\nRewriteRule ^([^.]+)$ $1.php [NC,L]\n```\n[Source](https://www.abeautifulsite.net/access-pages-without-the-php-extension-using-htaccess/)\n\n### Exclude URL from Redirection\nThis snippet allows you to exclude a URL from redirection.  For example, if you have redirection rules setup but want to exclude robots.txt so search engines can access that URL as expected.\n``` apacheconf\nRewriteEngine On\nRewriteRule ^robots.txt - [L]\n```\n\n## Security\n### Deny All Access\n``` apacheconf\nRequire all denied\n```\n\nBut wait, this will lock you out from your content as well! Thus introducing..."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_022",
+    "original_id": "candidate_031",
+    "question": "What are the impacst and limiations of using .htaccess snippits to enforce canoncal URLs on an Apche 2.4 server, and how should I adjust them if I'm still on Apche 2.2?",
+    "ground_truth": "The provided .htaccess snippets are designed specifically for Apache 2.4. They are intended for situations where you cannot edit the main server configuration file, but they are intrinsically slower and more complicated than making changes in the main config. While dropping a snippet into an .htaccess file is usually sufficient, certain modifications may be required, so you should use them at your own risk. If you are still running Apache 2.2, you should not use these snippets directly; instead, check the `2.2` branch of the repository and consult the Apache 2.4 upgrading document for details on breaking changes between the versions.",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "<1-hop>\n\n# .htaccess Snippets\n<!-- Source: phanan/htaccess | License: MIT -->\n\n# .htaccess Snippets [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\nA collection of useful .htaccess snippets, all in one place.\n\n> [!NOTE]\n> `.htaccess` files are for people that do not have rights to edit the main server configuration file. They are intrinsically slower and more complicated than using the main config. Please see the [howto in the httpd documentation](https://httpd.apache.org/docs/current/howto/htaccess.html) for further details.\n\n> [!WARNING]\n> While dropping the snippet into an `.htaccess` file is most of the time sufficient, there are cases when certain modifications might be required. Use at your own risk.\n\n> [!IMPORTANT]\n> These snippets are for Apache 2.4. If you are still using Apache 2.2, check the [`2.2` branch](https://github.com/phanan/htaccess/tree/2.2). For details on the breaking changes between 2.2 and 2.4, see the [upgrading document](https://httpd.apache.org/docs/2.4/upgrading.html) as well as [this issue](https://github.com/phanan/htaccess/issues/2)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_023",
+    "original_id": "candidate_037",
+    "question": "As a Remote Operations Engineer focused on optimizing command-line workflows, could you explain who jlevy is in relation to The Art of Command Line and what invitation he extends to potential collaborators?",
+    "ground_truth": "jlevy is the author of The Art of Command Line. In the note accompanying the guide, he mentions that he is planning to revise the document and is looking for a new co\u2011author to help expand it into a more comprehensive guide. He invites anyone interested in writing and who is close to being an expert on the material to contact him via josh (0x40) holloway.com.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# The Art of Command Line\n<!-- Source: jlevy/the-art-of-command-line | License: CC-BY-SA-4.0 -->\n\n\ud83c\udf0d\n*[\u010ce\u0161tina](README-cs.md) \u2219 [Deutsch](README-de.md) \u2219 [\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac](README-el.md) \u2219 [English](README.md) \u2219 [Espa\u00f1ol](README-es.md) \u2219 [Fran\u00e7ais](README-fr.md) \u2219 [Indonesia](README-id.md) \u2219 [Italiano](README-it.md) \u2219 [\u65e5\u672c\u8a9e](README-ja.md) \u2219 [\ud55c\uad6d\uc5b4](README-ko.md) \u2219 [polski](README-pl.md) \u2219 [Portugu\u00eas](README-pt.md) \u2219 [Rom\u00e2n\u0103](README-ro.md) \u2219 [\u0420\u0443\u0441\u0441\u043a\u0438\u0439](README-ru.md) \u2219 [Sloven\u0161\u010dina](README-sl.md) \u2219 [\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430](README-uk.md) \u2219 [\u7b80\u4f53\u4e2d\u6587](README-zh.md) \u2219 [\u7e41\u9ad4\u4e2d\u6587](README-zh-Hant.md)*\n\n\n# The Art of Command Line\n\n*Note: I'm planning to revise this and looking for a new co-author to help with expanding this into a more comprehensive guide. While it's very popular, it could be broader and a bit deeper. If you like to write and are close to being an expert on this material and willing to consider helping, please drop me a note at josh (0x40) holloway.com. \u2013[jlevy](https://github.com/jlevy), [Holloway](https://www.holloway.com). Thank you!*"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_024",
+    "original_id": "candidate_038",
+    "question": "Where can I find the contact information for josh, the author of The Art of Command Line, who is seeking a co\u2011author to expand the guide?",
+    "ground_truth": "The note in the document states: \"drop me a note at josh (0x40) holloway.com,\" indicating that josh can be contacted via email at josh@holloway.com.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# The Art of Command Line\n<!-- Source: jlevy/the-art-of-command-line | License: CC-BY-SA-4.0 -->\n\n\ud83c\udf0d\n*[\u010ce\u0161tina](README-cs.md) \u2219 [Deutsch](README-de.md) \u2219 [\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac](README-el.md) \u2219 [English](README.md) \u2219 [Espa\u00f1ol](README-es.md) \u2219 [Fran\u00e7ais](README-fr.md) \u2219 [Indonesia](README-id.md) \u2219 [Italiano](README-it.md) \u2219 [\u65e5\u672c\u8a9e](README-ja.md) \u2219 [\ud55c\uad6d\uc5b4](README-ko.md) \u2219 [polski](README-pl.md) \u2219 [Portugu\u00eas](README-pt.md) \u2219 [Rom\u00e2n\u0103](README-ro.md) \u2219 [\u0420\u0443\u0441\u0441\u043a\u0438\u0439](README-ru.md) \u2219 [Sloven\u0161\u010dina](README-sl.md) \u2219 [\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430](README-uk.md) \u2219 [\u7b80\u4f53\u4e2d\u6587](README-zh.md) \u2219 [\u7e41\u9ad4\u4e2d\u6587](README-zh-Hant.md)*\n\n\n# The Art of Command Line\n\n*Note: I'm planning to revise this and looking for a new co-author to help with expanding this into a more comprehensive guide. While it's very popular, it could be broader and a bit deeper. If you like to write and are close to being an expert on this material and willing to consider helping, please drop me a note at josh (0x40) holloway.com. \u2013[jlevy](https://github.com/jlevy), [Holloway](https://www.holloway.com). Thank you!*"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_025",
+    "original_id": "candidate_039",
+    "question": "does The Art of Command Line need a co\u2011author?",
+    "ground_truth": "The author is planning to revise The Art of Command Line and is looking for a new co\u2011author to help expand it into a more comprehensive guide. Interested contributors are asked to drop a note to josh (0x40) holloway.com.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# The Art of Command Line\n<!-- Source: jlevy/the-art-of-command-line | License: CC-BY-SA-4.0 -->\n\n\ud83c\udf0d\n*[\u010ce\u0161tina](README-cs.md) \u2219 [Deutsch](README-de.md) \u2219 [\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac](README-el.md) \u2219 [English](README.md) \u2219 [Espa\u00f1ol](README-es.md) \u2219 [Fran\u00e7ais](README-fr.md) \u2219 [Indonesia](README-id.md) \u2219 [Italiano](README-it.md) \u2219 [\u65e5\u672c\u8a9e](README-ja.md) \u2219 [\ud55c\uad6d\uc5b4](README-ko.md) \u2219 [polski](README-pl.md) \u2219 [Portugu\u00eas](README-pt.md) \u2219 [Rom\u00e2n\u0103](README-ro.md) \u2219 [\u0420\u0443\u0441\u0441\u043a\u0438\u0439](README-ru.md) \u2219 [Sloven\u0161\u010dina](README-sl.md) \u2219 [\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430](README-uk.md) \u2219 [\u7b80\u4f53\u4e2d\u6587](README-zh.md) \u2219 [\u7e41\u9ad4\u4e2d\u6587](README-zh-Hant.md)*\n\n\n# The Art of Command Line\n\n*Note: I'm planning to revise this and looking for a new co-author to help with expanding this into a more comprehensive guide. While it's very popular, it could be broader and a bit deeper. If you like to write and are close to being an expert on this material and willing to consider helping, please drop me a note at josh (0x40) holloway.com. \u2013[jlevy](https://github.com/jlevy), [Holloway](https://www.holloway.com). Thank you!*"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_026",
+    "original_id": "candidate_040",
+    "question": "what ctrl-w do?",
+    "ground_truth": "In Bash, ctrl-w deletes the last word.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- In Bash, use **ctrl-w** to delete the last word, and **ctrl-u** to delete the content from current cursor back to the start of the line. Use **alt-b** and **alt-f** to move by word, **ctrl-a** to move cursor to beginning of line,  **ctrl-e** to move cursor to end of line, **ctrl-k** to kill to the end of the line, **ctrl-l** to clear the screen. See `man readline` for all the default keybindings in Bash. There are a lot. For example **alt-.** cycles through previous arguments, and **alt-*** expands a glob.\n\n\n- Alternatively, if you love vi-style key-bindings, use `set -o vi` (and `set -o emacs` to put it back).\n\n- For editing long commands, after setting your editor (for example `export EDITOR=vim`), **ctrl-x** **ctrl-e** will open the current command in an editor for multi-line editing. Or in vi style, **escape-v**.\n\n- To see recent commands, use `history`. Follow with `!n` (where `n` is the command number) to execute again. There are also many abbreviations you can use, the most useful probably being `!$` for last argument and `!!` for last command (see \"HISTORY EXPANSION\" in the man page). However, these are often easily replaced with **ctrl-r** and **alt-.**."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_027",
+    "original_id": "candidate_041",
+    "question": "what readline do in bash?",
+    "ground_truth": "readline supplies Bash\u2019s default keybindings (e.g., ctrl\u2011w, ctrl\u2011u, alt\u2011b, alt\u2011f, ctrl\u2011a, ctrl\u2011e, ctrl\u2011k, ctrl\u2011l, alt\u2011., alt\u2011*) as described in its man page.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- In Bash, use **ctrl-w** to delete the last word, and **ctrl-u** to delete the content from current cursor back to the start of the line. Use **alt-b** and **alt-f** to move by word, **ctrl-a** to move cursor to beginning of line,  **ctrl-e** to move cursor to end of line, **ctrl-k** to kill to the end of the line, **ctrl-l** to clear the screen. See `man readline` for all the default keybindings in Bash. There are a lot. For example **alt-.** cycles through previous arguments, and **alt-*** expands a glob.\n\n\n- Alternatively, if you love vi-style key-bindings, use `set -o vi` (and `set -o emacs` to put it back).\n\n- For editing long commands, after setting your editor (for example `export EDITOR=vim`), **ctrl-x** **ctrl-e** will open the current command in an editor for multi-line editing. Or in vi style, **escape-v**.\n\n- To see recent commands, use `history`. Follow with `!n` (where `n` is the command number) to execute again. There are also many abbreviations you can use, the most useful probably being `!$` for last argument and `!!` for last command (see \"HISTORY EXPANSION\" in the man page). However, these are often easily replaced with **ctrl-r** and **alt-.**."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_028",
+    "original_id": "candidate_042",
+    "question": "In Bash, which readline shortcuts are most effective for deleting text, moving the cursor by word, accessing the beginning or end of a line, clearing the screen, and expanding previous arguments, and how can I switch between emacs and vi editing modes as well as invoke an external editor for multi\u2011line command editing?",
+    "ground_truth": "In Bash, the following readline shortcuts are useful: **Ctrl\u2011W** deletes the last word; **Ctrl\u2011U** deletes from the cursor back to the start of the line; **Alt\u2011B** and **Alt\u2011F** move the cursor backward and forward by word; **Ctrl\u2011A** moves the cursor to the beginning of the line; **Ctrl\u2011E** moves the cursor to the end of the line; **Ctrl\u2011K** kills text to the end of the line; **Ctrl\u2011L** clears the screen; **Alt\u2011.** cycles through previous arguments; and **Alt\u2011*** expands a glob. To switch editing modes, use `set -o vi` for vi\u2011style key bindings or `set -o emacs` to return to emacs\u2011style bindings. For editing long commands in an external editor, set an editor (for example `export EDITOR=vim`) and press **Ctrl\u2011X Ctrl\u2011E**; in vi mode, the equivalent is **Esc v**.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- In Bash, use **ctrl-w** to delete the last word, and **ctrl-u** to delete the content from current cursor back to the start of the line. Use **alt-b** and **alt-f** to move by word, **ctrl-a** to move cursor to beginning of line,  **ctrl-e** to move cursor to end of line, **ctrl-k** to kill to the end of the line, **ctrl-l** to clear the screen. See `man readline` for all the default keybindings in Bash. There are a lot. For example **alt-.** cycles through previous arguments, and **alt-*** expands a glob.\n\n\n- Alternatively, if you love vi-style key-bindings, use `set -o vi` (and `set -o emacs` to put it back).\n\n- For editing long commands, after setting your editor (for example `export EDITOR=vim`), **ctrl-x** **ctrl-e** will open the current command in an editor for multi-line editing. Or in vi style, **escape-v**.\n\n- To see recent commands, use `history`. Follow with `!n` (where `n` is the command number) to execute again. There are also many abbreviations you can use, the most useful probably being `!$` for last argument and `!!` for last command (see \"HISTORY EXPANSION\" in the man page). However, these are often easily replaced with **ctrl-r** and **alt-.**."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_029",
+    "original_id": "candidate_043",
+    "question": "How can I use Pythn to start a simple web servr on port 7777 for sharing the currnt directory, and what is the exact command difference between the Python 2 and Python 3 versions?",
+    "ground_truth": "Use `python -m SimpleHTTPServer 7777` for Python 2 and `python -m http.server 7777` for Python 3. Both commands start a simple web server that serves all files in the current directory (and subdirectories) and is available to anyone on your network.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- A few other options relevant to ssh are security sensitive and should be enabled with care, e.g. per subnet or host or in trusted networks: `StrictHostKeyChecking=no`, `ForwardAgent=yes`\n\n- Consider [`mosh`](https://mosh.org/) an alternative to ssh that uses UDP, avoiding dropped connections and adding convenience on the road (requires server-side setup).\n\n- To get the permissions on a file in octal form, which is useful for system configuration but not available in `ls` and easy to bungle, use something like\n```sh\n      stat -c '%A %a %n' /etc/timezone\n```\n\n- For interactive selection of values from the output of another command, use [`percol`](https://github.com/mooz/percol) or [`fzf`](https://github.com/junegunn/fzf).\n\n- For interaction with files based on the output of another command (like `git`), use `fpp` ([PathPicker](https://github.com/facebook/PathPicker)).\n\n- For a simple web server for all files in the current directory (and subdirs), available to anyone on your network, use:\n`python -m SimpleHTTPServer 7777` (for port 7777 and Python 2) and `python -m http.server 7777` (for port 7777 and Python 3)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_030",
+    "original_id": "candidate_044",
+    "question": "How can I interact with git files using PathPicker?",
+    "ground_truth": "For interaction with files based on the output of another command (like `git`), use `fpp` (PathPicker).",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- A few other options relevant to ssh are security sensitive and should be enabled with care, e.g. per subnet or host or in trusted networks: `StrictHostKeyChecking=no`, `ForwardAgent=yes`\n\n- Consider [`mosh`](https://mosh.org/) an alternative to ssh that uses UDP, avoiding dropped connections and adding convenience on the road (requires server-side setup).\n\n- To get the permissions on a file in octal form, which is useful for system configuration but not available in `ls` and easy to bungle, use something like\n```sh\n      stat -c '%A %a %n' /etc/timezone\n```\n\n- For interactive selection of values from the output of another command, use [`percol`](https://github.com/mooz/percol) or [`fzf`](https://github.com/junegunn/fzf).\n\n- For interaction with files based on the output of another command (like `git`), use `fpp` ([PathPicker](https://github.com/facebook/PathPicker)).\n\n- For a simple web server for all files in the current directory (and subdirs), available to anyone on your network, use:\n`python -m SimpleHTTPServer 7777` (for port 7777 and Python 2) and `python -m http.server 7777` (for port 7777 and Python 3)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_031",
+    "original_id": "candidate_045",
+    "question": "How can I start a pythn http.serer to share the curent directory on my network?",
+    "ground_truth": "Use `python -m http.server 7777` (for Python 3) to start a simple web server that serves all files in the current directory and its subdirectories, making them available to anyone on your network. For Python 2, the equivalent command is `python -m SimpleHTTPServer 7777`.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- A few other options relevant to ssh are security sensitive and should be enabled with care, e.g. per subnet or host or in trusted networks: `StrictHostKeyChecking=no`, `ForwardAgent=yes`\n\n- Consider [`mosh`](https://mosh.org/) an alternative to ssh that uses UDP, avoiding dropped connections and adding convenience on the road (requires server-side setup).\n\n- To get the permissions on a file in octal form, which is useful for system configuration but not available in `ls` and easy to bungle, use something like\n```sh\n      stat -c '%A %a %n' /etc/timezone\n```\n\n- For interactive selection of values from the output of another command, use [`percol`](https://github.com/mooz/percol) or [`fzf`](https://github.com/junegunn/fzf).\n\n- For interaction with files based on the output of another command (like `git`), use `fpp` ([PathPicker](https://github.com/facebook/PathPicker)).\n\n- For a simple web server for all files in the current directory (and subdirs), available to anyone on your network, use:\n`python -m SimpleHTTPServer 7777` (for port 7777 and Python 2) and `python -m http.server 7777` (for port 7777 and Python 3)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_032",
+    "original_id": "candidate_047",
+    "question": "hey i need to know what the zcat command does when i am working remote over ssh can you tell me like why i would use zcat and what it actually does with compressed files",
+    "ground_truth": "zcat is a command you can use to operate on compressed files.",
+    "source_document": "the_art_of_command_line.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "- To split files into pieces, see `split` (to split by size) and `csplit` (to split by a pattern).\n\n- Date and time: To get the current date and time in the helpful [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format, use `date -u +\"%Y-%m-%dT%H:%M:%SZ\"` (other options [are](https://stackoverflow.com/questions/7216358/date-command-on-os-x-doesnt-have-iso-8601-i-option) [problematic](https://unix.stackexchange.com/questions/164826/date-command-iso-8601-option)). To manipulate date and time expressions, use `dateadd`, `datediff`, `strptime` etc. from [`dateutils`](http://www.fresse.org/dateutils/).\n\n- Use `zless`, `zmore`, `zcat`, and `zgrep` to operate on compressed files.\n\n- File attributes are settable via `chattr` and offer a lower-level alternative to file permissions. For example, to protect against accidental file deletion the immutable flag:  `sudo chattr +i /critical/directory/or/file`\n\n- Use `getfacl` and `setfacl` to save and restore file permissions. For example:\n```sh\n   getfacl -R /some/path > permissions.txt\n   setfacl --restore=permissions.txt\n```"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_033",
+    "original_id": "candidate_049",
+    "question": "How does Subversion fit into the twelve\u2011factor app's codebase strategy?",
+    "ground_truth": "Subversion is one of the version control systems that a twelve\u2011factor app may use. In a centralized system like Subversion, a codebase corresponds to a single repository. The code repository, or repo, holds the revision tracking database. The twelve\u2011factor principle requires a one\u2011to\u2011one relationship between the codebase and the app; if multiple codebases exist, the result is a distributed system, not a single app.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "One codebase tracked in revision control, many deploys",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# Twelve-Factor App\n<!-- Source: heroku/12factor | License: MIT -->\n\n## I. Codebase\n### One codebase tracked in revision control, many deploys\n\nA twelve-factor app is always tracked in a version control system, such as [Git](http://git-scm.com/), [Mercurial](https://www.mercurial-scm.org/), or [Subversion](http://subversion.apache.org/).  A copy of the revision tracking database is known as a *code repository*, often shortened to *code repo* or just *repo*.\n\nA *codebase* is any single repo (in a centralized revision control system like Subversion), or any set of repos who share a root commit (in a decentralized revision control system like Git).\n\n![One codebase maps to many deploys](/images/codebase-deploys.png)\n\nThere is always a one-to-one correlation between the codebase and the app:\n\n* If there are multiple codebases, it's not an app -- it's a distributed system.  Each component in a distributed system is an app, and each can individually comply with twelve-factor.\n* Multiple apps sharing the same code is a violation of twelve-factor.  The solution here is to factor shared code into libraries which can be included through the [dependency manager](./dependencies)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_034",
+    "original_id": "candidate_050",
+    "question": "What MIT license used for this app?",
+    "ground_truth": "The Twelve-Factor App is licensed under the MIT license.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "One codebase tracked in revision control, many deploys",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# Twelve-Factor App\n<!-- Source: heroku/12factor | License: MIT -->\n\n## I. Codebase\n### One codebase tracked in revision control, many deploys\n\nA twelve-factor app is always tracked in a version control system, such as [Git](http://git-scm.com/), [Mercurial](https://www.mercurial-scm.org/), or [Subversion](http://subversion.apache.org/).  A copy of the revision tracking database is known as a *code repository*, often shortened to *code repo* or just *repo*.\n\nA *codebase* is any single repo (in a centralized revision control system like Subversion), or any set of repos who share a root commit (in a decentralized revision control system like Git).\n\n![One codebase maps to many deploys](/images/codebase-deploys.png)\n\nThere is always a one-to-one correlation between the codebase and the app:\n\n* If there are multiple codebases, it's not an app -- it's a distributed system.  Each component in a distributed system is an app, and each can individually comply with twelve-factor.\n* Multiple apps sharing the same code is a violation of twelve-factor.  The solution here is to factor shared code into libraries which can be included through the [dependency manager](./dependencies)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_035",
+    "original_id": "candidate_051",
+    "question": "How does Subversion fit in 12-factr app?",
+    "ground_truth": "Subversion is a centralized revision control system used to track the codebase of a twelve-factor app.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "One codebase tracked in revision control, many deploys",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "# Twelve-Factor App\n<!-- Source: heroku/12factor | License: MIT -->\n\n## I. Codebase\n### One codebase tracked in revision control, many deploys\n\nA twelve-factor app is always tracked in a version control system, such as [Git](http://git-scm.com/), [Mercurial](https://www.mercurial-scm.org/), or [Subversion](http://subversion.apache.org/).  A copy of the revision tracking database is known as a *code repository*, often shortened to *code repo* or just *repo*.\n\nA *codebase* is any single repo (in a centralized revision control system like Subversion), or any set of repos who share a root commit (in a decentralized revision control system like Git).\n\n![One codebase maps to many deploys](/images/codebase-deploys.png)\n\nThere is always a one-to-one correlation between the codebase and the app:\n\n* If there are multiple codebases, it's not an app -- it's a distributed system.  Each component in a distributed system is an app, and each can individually comply with twelve-factor.\n* Multiple apps sharing the same code is a violation of twelve-factor.  The solution here is to factor shared code into libraries which can be included through the [dependency manager](./dependencies)."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_036",
+    "original_id": "candidate_053",
+    "question": "What role does the staging env play in grouping configurtion vars in a twelv-factor app, and how does it impact deploy brittleness?",
+    "ground_truth": "In a twelve\u2011factor app, configuration is stored in environment variables. Grouping these variables into named groups\u2014called environments\u2014helps separate settings for different deploys. Common groups include development, test, and production. As more deploys are added, new environment names such as staging or qa are needed. If developers create many custom environments (e.g., joes\u2011staging), the number of config groups grows combinatorially, making deployment management brittle.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "**The twelve-factor app stores config in *environment variables*** (often shortened to *env vars* or *env*).  Env vars are easy to change between deploys without changing any code; unlike config files, there is little chance of them being checked into the code repo accidentally; and unlike custom config files, or other config mechanisms such as Java System Properties, they are a language- and OS-agnostic standard.\n\nAnother aspect of config management is grouping.  Sometimes apps batch config into named groups (often called \"environments\") named after specific deploys, such as the `development`, `test`, and `production` environments in Rails.  This method does not scale cleanly: as more deploys of the app are created, new environment names are necessary, such as `staging` or `qa`.  As the project grows further, developers may add their own special environments like `joes-staging`, resulting in a combinatorial explosion of config which makes managing deploys of the app very brittle."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_037",
+    "original_id": "candidate_054",
+    "question": "What is the role of env vars in a twelv-factor app?",
+    "ground_truth": "In a twelve-factor app, configuration is stored in environment variables (env vars). Env vars are easy to change between deploys without changing any code, reduce the risk of accidental commits to the code repo, and are language- and OS-agnostic. However, grouping config into named environments can become unwieldy as the number of deploys grows, leading to a combinatorial explosion of config that makes managing deploys brittle.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "**The twelve-factor app stores config in *environment variables*** (often shortened to *env vars* or *env*).  Env vars are easy to change between deploys without changing any code; unlike config files, there is little chance of them being checked into the code repo accidentally; and unlike custom config files, or other config mechanisms such as Java System Properties, they are a language- and OS-agnostic standard.\n\nAnother aspect of config management is grouping.  Sometimes apps batch config into named groups (often called \"environments\") named after specific deploys, such as the `development`, `test`, and `production` environments in Rails.  This method does not scale cleanly: as more deploys of the app are created, new environment names are necessary, such as `staging` or `qa`.  As the project grows further, developers may add their own special environments like `joes-staging`, resulting in a combinatorial explosion of config which makes managing deploys of the app very brittle."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_038",
+    "original_id": "candidate_055",
+    "question": "Capistrano release management features: how does it store releases, manage unique release IDs, and support rollback, and how do these practices align with twelve-factor app principles?",
+    "ground_truth": "Deployment tools typically offer release management tools, most notably the ability to roll back to a previous release. For example, the Capistrano deployment tool stores releases in a subdirectory named releases, where the current release is a symlink to the current release directory. Its rollback command makes it easy to quickly roll back to a previous release. Every release should always have a unique release ID, such as a timestamp of the release (such as 2011-04-06-20:32:17) or an incrementing number (such as v100). Releases are an append-only ledger and a release cannot be mutated once it is created. Any change must create a new release.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "Deployment tools typically offer release management tools, most notably the ability to roll back to a previous release.  For example, the [Capistrano](https://github.com/capistrano/capistrano/wiki) deployment tool stores releases in a subdirectory named `releases`, where the current release is a symlink to the current release directory.  Its `rollback` command makes it easy to quickly roll back to a previous release.\n\nEvery release should always have a unique release ID, such as a timestamp of the release (such as `2011-04-06-20:32:17`) or an incrementing number (such as `v100`).  Releases are an append-only ledger and a release cannot be mutated once it is created.  Any change must create a new release."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_039",
+    "original_id": "candidate_056",
+    "question": "How does Capistrano manage release rollbacks?",
+    "ground_truth": "Capistrano stores releases in a subdirectory named \"releases\", with the current release as a symlink, and its \"rollback\" command allows quick rollback to a previous release.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "Deployment tools typically offer release management tools, most notably the ability to roll back to a previous release.  For example, the [Capistrano](https://github.com/capistrano/capistrano/wiki) deployment tool stores releases in a subdirectory named `releases`, where the current release is a symlink to the current release directory.  Its `rollback` command makes it easy to quickly roll back to a previous release.\n\nEvery release should always have a unique release ID, such as a timestamp of the release (such as `2011-04-06-20:32:17`) or an incrementing number (such as `v100`).  Releases are an append-only ledger and a release cannot be mutated once it is created.  Any change must create a new release."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_040",
+    "original_id": "candidate_057",
+    "question": "How Capistrano store releases and rollback works?",
+    "ground_truth": "Capistrano stores releases in a subdirectory named `releases`, with the current release being a symlink to the current release directory. Its `rollback` command makes it easy to quickly roll back to a previous release. Every release should always have a unique release ID, such as a timestamp or an incrementing number. Releases are an append-only ledger and a release cannot be mutated once it is created; any change must create a new release.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Overview",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "Deployment tools typically offer release management tools, most notably the ability to roll back to a previous release.  For example, the [Capistrano](https://github.com/capistrano/capistrano/wiki) deployment tool stores releases in a subdirectory named `releases`, where the current release is a symlink to the current release directory.  Its `rollback` command makes it easy to quickly roll back to a previous release.\n\nEvery release should always have a unique release ID, such as a timestamp of the release (such as `2011-04-06-20:32:17`) or an incrementing number (such as `v100`).  Releases are an append-only ledger and a release cannot be mutated once it is created.  Any change must create a new release."
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_041",
+    "original_id": "candidate_058",
+    "question": "How do PHP processes run as child processes of Apache?",
+    "ground_truth": "In web apps, PHP processes run as child processes of Apache, started on demand as needed by request volume. The running process(es) are only minimally visible to the developers of the app.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Scale out via the process model",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "---\n\n## VIII. Concurrency\n### Scale out via the process model\n\nAny computer program, once run, is represented by one or more processes.  Web apps have taken a variety of process-execution forms.  For example, PHP processes run as child processes of Apache, started on demand as needed by request volume.  Java processes take the opposite approach, with the JVM providing one massive uberprocess that reserves a large block of system resources (CPU and memory) on startup, with concurrency managed internally via threads.  In both cases, the running process(es) are only minimally visible to the developers of the app.\n\n![Scale is expressed as running processes, workload diversity is expressed as process types.](/images/process-types.png)"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_042",
+    "original_id": "candidate_059",
+    "question": "What is the role of Apache in managing PHP child processes for web applications, and how does this affect process visibility and scaling in a Twelve\u2011Factor App environment?",
+    "ground_truth": "Apache starts PHP child processes on demand based on request volume, and these processes are only minimally visible to developers.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Scale out via the process model",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "---\n\n## VIII. Concurrency\n### Scale out via the process model\n\nAny computer program, once run, is represented by one or more processes.  Web apps have taken a variety of process-execution forms.  For example, PHP processes run as child processes of Apache, started on demand as needed by request volume.  Java processes take the opposite approach, with the JVM providing one massive uberprocess that reserves a large block of system resources (CPU and memory) on startup, with concurrency managed internally via threads.  In both cases, the running process(es) are only minimally visible to the developers of the app.\n\n![Scale is expressed as running processes, workload diversity is expressed as process types.](/images/process-types.png)"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_043",
+    "original_id": "candidate_060",
+    "question": "Whut is the role of the JMV in Java proccesses, and how does it differ from PHP proccesses in terms of resource allocation and concurrency management, and how does this affect the visibility of running proccesses to developers?",
+    "ground_truth": "In Java, the JVM creates a single large uberprocess that reserves a large block of CPU and memory at startup, and handles concurrency internally using threads. This contrasts with PHP, where processes are child processes of Apache started on demand. In both cases, the running process(es) are only minimally visible to the developers of the app.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "Scale out via the process model",
+    "source_page": null,
+    "ground_truth_contexts": [
+      "---\n\n## VIII. Concurrency\n### Scale out via the process model\n\nAny computer program, once run, is represented by one or more processes.  Web apps have taken a variety of process-execution forms.  For example, PHP processes run as child processes of Apache, started on demand as needed by request volume.  Java processes take the opposite approach, with the JVM providing one massive uberprocess that reserves a large block of system resources (CPU and memory) on startup, with concurrency managed internally via threads.  In both cases, the running process(es) are only minimally visible to the developers of the app.\n\n![Scale is expressed as running processes, workload diversity is expressed as process types.](/images/process-types.png)"
+    ],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "openai/gpt-oss-120b"
+  },
+  {
+    "id": "eval_044",
+    "original_id": "manual_001",
+    "question": "Why does the Twelve-Factor App recommend storing configuration in environment variables instead of putting those values directly in the code?",
+    "ground_truth": "The Twelve-Factor App recommends environment variables because configuration can change between deployments, while the code itself should remain separate from those changes. Environment variables make it possible to update configuration without changing the code, reduce the chance of accidentally committing credentials to the repository, and work across different programming languages and operating systems.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "III. Config",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_045",
+    "original_id": "manual_002",
+    "question": "If I list all the packages my app needs in a dependency file, why does the Twelve-Factor App still say I need dependency isolation?",
+    "ground_truth": "Declaring dependencies specifies exactly which packages the application needs, but it does not prevent the application from accidentally relying on packages installed elsewhere on the system. Dependency isolation prevents these implicit dependencies from leaking into the application\u2019s runtime environment. The Twelve-Factor App requires both dependency declaration and isolation because using either one alone is not sufficient. For example, Python can use Pip for dependency declaration and Virtualenv for isolation.",
+    "source_document": "twelve_factor_app.md",
+    "source_section": "II. Dependencies",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_046",
+    "original_id": "manual_003",
+    "question": "I keep mixing up docker create and docker run. What's the actual difference between the two?",
+    "ground_truth": "docker create creates a container but does not start it. docker run creates the container and starts it in a single operation.",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Containers",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_047",
+    "original_id": "manual_004",
+    "question": "If I write EXPOSE 8000 in my Dockerfile, does that automatically make my app accessible on port 8000 from outside the container?",
+    "ground_truth": "No. The EXPOSE instruction in a Dockerfile documents the port the container is expected to listen on at runtime, but it does not make that port accessible by itself. To publish the container's port through the host, use port mapping with Docker's -p option",
+    "source_document": "docker_cheat_sheet.md",
+    "source_section": "Exposing Ports",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_048",
+    "original_id": "manual_005",
+    "question": "I accidentally ran git reset --hard and lost some commits. Is there a way to get back to where I was before the reset?",
+    "ground_truth": "Yes, if the work was committed or stashed, you can usually recover the previous commit using Git\u2019s reflog. Run git reflog to find the commit you want to return to, then use git reset --hard <commit-SHA> to restore that state. However, git reset --hard removes uncommitted changes, so this recovery method does not guarantee that uncommitted work can be recovered.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I did something terribly wrong, please tell me git has a magic time machine!?!",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_049",
+    "original_id": "manual_006",
+    "question": "I accidentally pushed a commit containing an API key to GitHub. If I remove the key and push the changes again, is that enough to make it safe?",
+    "ground_truth": "No. Once a commit containing sensitive information has been pushed, you should consider that information compromised. If it is a password, change it immediately; if it is a key, regenerate it. You should also remove the sensitive information from the repository history, which may involve amending the commit and pushing the rewritten history with --force-with-lease. However, rewriting the history cannot remove the secret from copies that other people have already pulled, so removing it from the repository alone is not enough.",
+    "source_document": "git_flight_rules.md",
+    "source_section": "I committed something like an API key or password and want to remove it",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  },
+  {
+    "id": "eval_050",
+    "original_id": "manual_007",
+    "question": "I'm using Apache and want my frontend to make requests to my backend from a different domain. How can I enable CORS using an .htaccess file, and what if I want to allow only my frontend's domain?",
+    "ground_truth": "The document provides an .htaccess snippet that sets three CORS headers: Access-Control-Allow-Origin to *, Access-Control-Allow-Methods to GET, POST, PUT, DELETE, OPTIONS, and Access-Control-Allow-Headers to Content-Type, Authorization. To restrict access to a specific domain, replace * in the Access-Control-Allow-Origin header with that domain's URL, such as https://example.com.",
+    "source_document": "htaccess_snippets.md",
+    "source_section": "Cross Origin Resource Sharing (CORS)",
+    "ground_truth_contexts": [],
+    "faithfulness_score": 1.0,
+    "evaluator_model": "human_curated"
+  }
+]
