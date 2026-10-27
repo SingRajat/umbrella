@@ -70,97 +70,137 @@ class EvaluationPipeline:
 
         ## run retrieval pipeline
         retrieval_start= time.perf_counter()
-        retrieved = retrieve_chunks(
-            query_text=question,
-            doc_id=doc_id,
-            vector_store=self.vector_store,
-        )
-
-        retrieval_latency_ms= round((time.perf_counter() - retrieval_start)* 1000, 2)
-
-        ## call the main rag pipeline
-        generation_start=time.perf_counter()
-        query_response = run_query_pipeline(
-            query=question,
-            doc_id=doc_id,
-            vector_store=self.vector_store,
-        )
-
-        generation_latency_ms= round((time.perf_counter() - generation_start)* 1000, 2)
-
-        ## Calculate latency
-        latency_ms = round(
-            (time.perf_counter() - start_time) * 1000, 2
-        )
-
-        ## context format needed for evaluation
-        contexts = [chunk.text for chunk in retrieved]
-
-        if isinstance(query_response, QueryResponse):
-            answer = query_response.answer
-            citations = [c.model_dump() for c in query_response.citations]
-            """model_dump is used to convert pydantic model object 
-            into python dictionary as evaluation results are stored in json format""" 
-
-        elif isinstance(query_response, RefusalResponse):
-            answer = f"REFUSED: {query_response.reason}"
-            citations = []
-
-        else:
-             answer = getattr(query_response, "answer", str(query_response))
-
-        token_usage= getattr(query_response, "token_usage", None) or {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "total_tokens": 0,
-        }
-
-        faithfulness_score = None
-        precision_score= None
-        recall_score= None
-
-        if self.evaluator is not None:
-            faithfulness_score = self.evaluator.score_faithfulness(
-                question=question,
-                response=answer,
-                retrieved_contexts=contexts,
+        try:
+            retrieved = retrieve_chunks(
+                query_text=question,
+                doc_id=doc_id,
+                vector_store=self.vector_store,
             )
-            if ground_truth:
-                
-                precision_score= self.evaluator.score_context_precision(
-                        question=question,
-                        retrieved_contexts=contexts,
-                        reference=ground_truth,
-                )
-                recall_score= self.evaluator.score_context_recall(
-                        question=question,
-                        retrieved_contexts=contexts,
-                        reference=ground_truth,
-                )
+            retrieval_latency_ms= round((time.perf_counter() - retrieval_start)* 1000, 2)
 
-        return {
-            "question": question,
-            "ground_truth": ground_truth or "",
-            "answer": answer,
-            "contexts": contexts,
-            "status": query_response.status,
-            "citations": citations,
-            "token_usage": token_usage,
-            "faithfulness": faithfulness_score,
-            "context_precision": precision_score,
-            "context_recall": recall_score,
-            "retrieved_chunk_count": len(retrieved),
-            "latency": latency_ms,
-            "latency_ms": latency_ms,
-            "retrieval_latency_ms": retrieval_latency_ms,
-            "generation_latency_ms": generation_latency_ms,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+            ## call the main rag pipeline
+            generation_start=time.perf_counter()
+            query_response = run_query_pipeline(
+                query=question,
+                doc_id=doc_id,
+                vector_store=self.vector_store,
+            )
+
+            generation_latency_ms= round((time.perf_counter() - generation_start)* 1000, 2)
+
+            ## Calculate latency
+            latency_ms = round(
+                (time.perf_counter() - start_time) * 1000, 2
+            )
+
+            ## context format needed for evaluation
+            contexts = [chunk.text for chunk in retrieved]
+            refusal_reason= None
+            failure_type=None
+
+            if isinstance(query_response, QueryResponse):
+                answer = query_response.answer
+                citations = [c.model_dump() for c in query_response.citations]
+                """model_dump is used to convert pydantic model object 
+                into python dictionary as evaluation results are stored in json format""" 
+
+            elif isinstance(query_response, RefusalResponse):
+                refusal_reason= query_response.reason
+                answer = f"REFUSED: {refusal_reason}"
+                citations = []
+                reason_lower = refusal_reason.lower()
+                if any(k in reason_lower for k in ["evidence", "confidence", "threshold", "document"]):
+                    failure_type= "context_insufficient"
+                else:
+                    failure_type ="output_refusal"
+
+            else:
+                answer = getattr(query_response, "answer", str(query_response))
+                citations=[]
+
+            token_usage= getattr(query_response, "token_usage", None) or {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            }
+
+            faithfulness_score = None
+            precision_score= None
+            recall_score= None
+
+            if self.evaluator is not None:
+                faithfulness_score = self.evaluator.score_faithfulness(
+                    question=question,
+                    response=answer,
+                    retrieved_contexts=contexts,
+                )
+                if ground_truth:
+                    
+                    precision_score= self.evaluator.score_context_precision(
+                            question=question,
+                            retrieved_contexts=contexts,
+                            reference=ground_truth,
+                    )
+                    recall_score= self.evaluator.score_context_recall(
+                            question=question,
+                            retrieved_contexts=contexts,
+                            reference=ground_truth,
+                    )
+                    
+            status= getattr(query_response, "status", "answered")
+
+            return {
+                "question": question,
+                "ground_truth": ground_truth or "",
+                "answer": answer,
+                "contexts": contexts,
+                "status": query_response.status,
+                "failure_type": failure_type,       
+                "refusal_reason": refusal_reason,   
+                "error_message": None,    
+                "citations": citations,
+                "token_usage": token_usage,
+                "faithfulness": faithfulness_score,
+                "context_precision": precision_score,
+                "context_recall": recall_score,
+                "retrieved_chunk_count": len(retrieved),
+                "latency": latency_ms,
+                "latency_ms": latency_ms,
+                "retrieval_latency_ms": retrieval_latency_ms,
+                "generation_latency_ms": generation_latency_ms,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        
+        except Exception as exc:
+            logger.error(f"sample evaluation error for question '{question[:50]}....': {exc}")
+            latency_ms = round((time.perf_counter() - start_time)* 1000, 2)
+            return{
+                "question": question,
+                "ground_truth": ground_truth,
+                "answer": f"ERROR: {exc}",
+                "contexts": None,
+                "status": "error",                           
+                "failure_type": "execution_error",           
+                "refusal_reason": None,   
+                "error_message": str(exc),
+                "citations": [],
+                "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+                "faithfulness": None,
+                "context_precision": None,
+                "context_recall": None,
+                "retrieved_chunk_count": 0,
+                "latency": latency_ms,
+                "latency_ms": latency_ms,
+                "retrieval_latency_ms": 0.0,
+                "generation_latency_ms": 0.0,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
 
     def run_dataset(
         self,
         samples: List[Dict[str, Any]],
         run_name: str = "eval_run",
+        batch_limit: Optional[int] = None,
     ) -> Dict[str, Any]:
 
         ## generates unique identifier for each run
@@ -176,27 +216,80 @@ class EvaluationPipeline:
             f"[{run_id}] with {len(samples)} samples"
         )
 
-        ## store the results of each test question
+        checkpoint_path = self.results_dir / f"{run_name}_checkpoint.json"
         sample_results: List[Dict[str, Any]] = []
 
+        if checkpoint_path.exists():
+            try:
+                with open(checkpoint_path, "r", encoding="utf-8") as f:
+                    sample_results = json.load(f)
+                logger.info(
+                    f"Resumed from checkpoint: {len(sample_results)}/{len(samples)} already completed."
+                )
+            except Exception as e:
+                logger.warning(f"Could not load checkpoint: {e}")
+                sample_results = []
+
+        done_questions = {r.get("question") for r in sample_results if r.get("question")}
+        processed_in_batch = 0
+
         for idx, sample in enumerate(samples, start=1):
-            ## fetches values from the sample while tracking progress number
             question = sample.get("question", "")
+            if question in done_questions:
+                continue
+
+            if batch_limit is not None and processed_in_batch >= batch_limit:
+                logger.info(
+                    f"Batch limit reached ({batch_limit} samples). Checkpoint saved at {len(sample_results)}/{len(samples)}. Run again to continue."
+                )
+                break
+
             ground_truth = sample.get("ground_truth")
             doc_id = sample.get("doc_id")
 
-            logger.info(f"evaluating sample {idx}/{len(samples)}")
+            batch_info = f" [batch {processed_in_batch + 1}/{batch_limit}]" if batch_limit else ""
+            logger.info(f"evaluating sample {idx}/{len(samples)}{batch_info}")
 
-            result = self.run_single_sample(
-                question=question,
-                ground_truth=ground_truth,
-                doc_id=doc_id,
-            )
-            ## Store the results
+            max_retries = 5
+            for retry_attempt in range(max_retries + 1):
+                result = self.run_single_sample(
+                    question=question,
+                    ground_truth=ground_truth,
+                    doc_id=doc_id,
+                )
+                if result.get("status") == "error" and "429" in (result.get("error_message") or ""):
+                    if retry_attempt < max_retries:
+                        wait_time = 60 * (retry_attempt + 1)
+                        logger.warning(
+                            f"Groq rate limit (429) hit. Retry {retry_attempt + 1}/{max_retries}, "
+                            f"waiting {wait_time}s..."
+                        )
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(
+                            f"Sample '{question[:50]}...' failed with 429 after {max_retries} retries."
+                        )
+                break
+
             sample_results.append(result)
+            processed_in_batch += 1
+            with open(checkpoint_path, "w", encoding="utf-8") as f:
+                json.dump(sample_results, f, indent=2)
 
         answered_count = sum(1 for r in sample_results if r.get("status") == "answered")
         refused_count = sum(1 for r in sample_results if r.get("status") == "refused")
+        error_count = sum(1 for r in sample_results if r.get("status") == "error")
+        total_samples = len(sample_results)
+        refusal_rate = round(refused_count / total_samples, 4) if total_samples else 0.0
+        error_rate = round(error_count / total_samples, 4) if total_samples else 0.0
+
+        failure_breakdown = {}
+        for r in sample_results:
+            f_type = r.get("failure_type")
+            if f_type:
+                failure_breakdown[f_type] = failure_breakdown.get(f_type, 0) + 1
+
         total_duration_s = round(time.perf_counter() - start_time, 2)
         avg_latency = (
             round(sum(r.get("latency", 0.0) for r in sample_results) / len(sample_results), 2)
@@ -234,7 +327,7 @@ class EvaluationPipeline:
 
         total_prompt_tokens =sum((r.get("token_usage") or {}).get("prompt_tokens", 0) for r in sample_results)
         total_completion_tokens =sum((r.get("token_usage") or {}).get("completion_tokens", 0) for r in sample_results)
-        total_tokens =sum((r.get("token_usage") or {}).get("total_tokens, 0") for r in sample_results)
+        total_tokens =sum((r.get("token_usage") or {}).get("total_tokens", 0) for r in sample_results)
         avg_tokens_per_query=(
             round(total_tokens/ len(sample_results), 2)
             if sample_results
@@ -283,11 +376,14 @@ class EvaluationPipeline:
                 "total_samples": len(samples),
                 "answered_count": answered_count,
                 "refused_count": refused_count,
-                 "total_prompt_tokens": total_prompt_tokens,
+                "error_count": error_count,
+                "refusal_rate": refusal_rate,
+                "error_rate": error_rate,
+                "failure_breakdown": failure_breakdown,
+                "total_prompt_tokens": total_prompt_tokens,
                 "total_completion_tokens": total_completion_tokens,
                 "total_tokens": total_tokens,
                 "avg_tokens_per_query": avg_tokens_per_query,
-                "avg_latency_ms": avg_latency,
                 "avg_latency_ms": avg_latency,
                 "p50_latency_ms": p50_latency,
                 "p95_latency_ms": p95_latency,
@@ -315,9 +411,23 @@ class EvaluationPipeline:
             },
             "results": sample_results,
         }
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(output_data, f, indent=2)
-        logger.info(f"Evaluation run saved to {output_file}")
+
+        is_complete = len(sample_results) >= len(samples)
+        output_data["status"] = "completed" if is_complete else "in_progress"
+        output_data["completed_samples"] = len(sample_results)
+
+        if is_complete:
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(output_data, f, indent=2)
+            logger.info(f"Evaluation run completed and saved to {output_file}")
+            if checkpoint_path.exists():
+                checkpoint_path.unlink(missing_ok=True)
+        else:
+            logger.info(
+                f"Batch completed: {len(sample_results)}/{len(samples)} total questions finished. "
+                f"Checkpoint preserved at {checkpoint_path}."
+            )
+
         return output_data
 
     @staticmethod
