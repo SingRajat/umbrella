@@ -66,13 +66,23 @@ class CitationItem(BaseModel):
     section_heading: Optional[str] = None
     text_excerpt: str
 
+class ConversationMessage(BaseModel):
+    """A single user or assistant conversation turn."""
+    role: str = Field(..., pattern="^(user|assistant)$", description="Speaker role: 'user' or 'assistant'")
+    content: str = Field(..., min_length=1, max_length=10000, description="Message text content")
+
 
 class QueryRequest(BaseModel):
     """User query request payload."""
     query: str = Field(..., min_length=1, description="Question text to query against documents")
     doc_id: Optional[str] = Field(None, description="Optional document ID to restrict query scope")
     stream: bool = Field(False, description="Whether to stream response tokens")
-
+    conversation_history: Optional[List[ConversationMessage]] = Field(
+        None, description="Recent user/assistant conversation turns"
+    )
+    conversation_summary: Optional[str]= Field(
+        None, max_length=4000, description="Rolling summary of older conversation context"
+    )
 
 class QueryResponse(BaseModel):
     """Successful RAG answer response with citations."""
@@ -80,7 +90,8 @@ class QueryResponse(BaseModel):
     answer: str
     citations: List[CitationItem] = Field(default_factory=list)
     token_usage: Optional[Dict[str, int]] = None
-
+    active_history: List[ConversationMessage]= Field(default_factory=list)
+    conversation_summary: Optional[str]= None
 
 class RefusalResponse(BaseModel):
     """Refusal response returned when context is insufficient."""
@@ -89,7 +100,8 @@ class RefusalResponse(BaseModel):
     retrieved_chunk_ids: List[str] = Field(default_factory=list)
     token_usage: Optional[Dict[str, int]] = None
     query: str
-
+    active_history: List[ConversationMessage]= Field(default_factory=list)
+    conversation_summary: Optional[str] = None
 
 # --- System & Error Schemas ---
 
