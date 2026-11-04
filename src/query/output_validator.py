@@ -2,7 +2,6 @@
 import re
 from dataclasses import dataclass, field
 from typing import List, Optional, Set
-
 from src.api.schemas import CitationItem
 from src.common.logging import get_logger
 from src.storage.chroma import RetrievedChunk
