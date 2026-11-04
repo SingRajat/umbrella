@@ -1,9 +1,11 @@
 """LCEL query and generation pipeline chain with streaming support."""
 
 import json
+import re
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 
 from src.api.schemas import CitationItem, QueryResponse, RefusalResponse
 from src.common.logging import get_logger
@@ -13,6 +15,11 @@ from src.query.output_validator import validate_generated_output
 from src.query.prompt import format_context_blocks, get_rag_prompt_template
 from src.query.retriever import retrieve_chunks
 from src.storage.chroma import ChromaVectorStore, RetrievedChunk, get_vector_store
+from src.query.history import (
+    process_conversation_history,
+    rewrite_query,
+    messages_to_dicts,
+)
 
 logger = get_logger("umbrella.chains.query")
 
@@ -45,11 +52,13 @@ def extract_token_usage(ai_message: Any)-> Optional[Dict[str, Any]]:
 def run_query_pipeline(
     query: str,
     doc_id: Optional[str] = None,
+    history_messages: Optional[List[BaseMessage]] = None,
+    conversation_summary: Optional[str] = None,
     vector_store: Optional[ChromaVectorStore] = None,
     llm: Optional[BaseChatModel] = None,
 ) -> Union[QueryResponse, RefusalResponse]:
     """
-    Execute the end-to-end RAG query pipeline:
+    Execute the end-to-end RAG query pipeline with conversation memory:
     1. Retrieval -> Fetch top-k chunks from ChromaDB.
     2. Context Validation -> Check confidence threshold (0.5).
     3. Prompt Formatting -> Inject numbered context into ChatPromptTemplate.
@@ -64,10 +73,29 @@ def run_query_pipeline(
     # Step 1: Retrieval
     retrieved_chunks = retrieve_chunks(query_text=query, doc_id=doc_id, vector_store=store)
 
+    #Step 1: Memory Management
+    trimmed_history, effective_summary = process_conversation_history(
+        history_messages=history_messages,
+        conversation_summary=conversation_summary,
+        llm=chat_llm,
+    )
+
+    ## Step 2: Query Rewrite (bypasses LLM on turn 1, or falls back to original query if anything fails)
+    standalone_query = rewrite_query(
+        query=query,
+        history=trimmed_history,
+        summary=effective_summary,
+        llm=chat_llm,
+    )
+
+    # Step 3: Retrieval
+    retrieved_chunks = retrieve_chunks(query_text=standalone_query, doc_id=doc_id, vector_store=store)
+
     # Step 2: Context Validation
     val_result = validate_retrieved_context(retrieved_chunks)
     if not val_result.is_valid:
         logger.warning(f"Query refused during context validation: {val_result.reason}")
+        clean_refusal = f""
         return RefusalResponse(
             status="refused",
             reason=val_result.reason or "Retrieved evidence is insufficient.",
