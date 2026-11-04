@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from fastapi import APIRouter, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
+from langchain_core.messages.utils import count_tokens_approximately
 
 
 from src.api.schemas import (
@@ -29,6 +30,7 @@ from src.config.settings import get_settings
 from src.common.errors import IngestionError, ValidationError
 from src.common.logging import get_logger
 from src.storage.chroma import get_vector_store
+from src.query.history import dicts_to_messages, MAX_PAYLOAD_HISTORY_TOKENS
 
 logger = get_logger("umbrella.routes")
 router = APIRouter(prefix="/api/v1", tags=["RAG"])
@@ -302,6 +304,18 @@ def query_documents(payload: QueryRequest):
     """Ask a question and receive an answer with verifiable citations or a structured refusal."""
     if not payload.query.strip():
         raise ValidationError("Query cannot be empty.", error_code="EMPTY_QUERY", status_code=400)
+    
+    history_msgs = []
+    if payload.conversation_history:
+        history_msgs = dicts_to_messages([m.model_dump() for m in payload.conversation_history])
+    summary = payload.conversation_summary
+
+    if history_msgs and count_tokens_approximately(history_msgs)> MAX_PAYLOAD_HISTORY_TOKENS:
+        raise ValidationError(
+            "Conversation history exceeds the maximum allowed size.",
+            error_code="HISTORY_TOO_LARGE",
+            status_code=400,
+        )
 
     if payload.stream:
         return StreamingResponse(
@@ -313,6 +327,8 @@ def query_documents(payload: QueryRequest):
         result = run_query_pipeline(
             query=payload.query,
             doc_id=payload.doc_id,
+            history_messages=history_msgs,
+            conversation_summary=summary,
         )
         return result
     except Exception as exc:
