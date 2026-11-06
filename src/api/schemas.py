@@ -75,7 +75,7 @@ class ConversationMessage(BaseModel):
 class QueryRequest(BaseModel):
     """User query request payload."""
     query: str = Field(..., min_length=1, description="Question text to query against documents")
-    doc_id: Optional[str] = Field(None, description="Optional document ID to restrict query scope")
+    doc_id: str = Field(..., min_length=1, description="Document ID to scope the query")
     stream: bool = Field(False, description="Whether to stream response tokens")
     conversation_history: Optional[List[ConversationMessage]] = Field(
         None, description="Recent user/assistant conversation turns"
