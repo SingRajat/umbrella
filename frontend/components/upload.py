@@ -5,7 +5,7 @@ import streamlit as st
 
 def render_upload_section(backend_url: str):
     """Render document upload widget and document metadata list."""
-    st.subheader("📄 Document Ingestion")
+    st.subheader("Document Ingestion")
 
     uploaded_file = st.file_uploader(
         "Upload PDF, DOCX, TXT, or MD",
@@ -15,7 +15,7 @@ def render_upload_section(backend_url: str):
     )
 
     if uploaded_file is not None:
-        if st.button("📥 Ingest Document", type="primary", use_container_width=True):
+        if st.button("Ingest Document", type="primary", use_container_width=True):
             with st.spinner(f"Ingesting '{uploaded_file.name}'..."):
                 try:
                     files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
@@ -41,6 +41,10 @@ def render_upload_section(backend_url: str):
             f"**Doc ID:** `{doc.get('doc_id')}`\n\n"
             f"**Chunks:** `{doc.get('chunk_count', 0)}`"
         )
-        if st.button("🔄 Clear Active Document", use_container_width=True):
+        if st.button("Clear Active Document", use_container_width=True):
             st.session_state.current_doc = None
+            st.session_state.messages = []
+            st.session_state.chat_history = []
+            st.session_state.conversation_summary = None
+            st.session_state.history_doc_id = None
             st.rerun()
