@@ -12,7 +12,8 @@ Rules:
 4. Do NOT answer the question.
 5. Do NOT invent new facts or assume information not mentioned in the conversation.
 6. Output ONLY the standalone search query text, with no explanations, prefixes, or quotes.
-7. If the follow-up question is already standalone, return it unchanged."""
+7. If the follow-up question is already standalone, return it unchanged.
+8. If the follow-up question introduces a new topic or is already self-contained without unresolved pronouns or references (e.g., previous turn was about 'vacation policy' and new question is 'What is the travel reimbursement limit?'), return the question EXACTLY as written. Do NOT force connections to previous topics."""
 
 REWRITE_USER_TEMPLATE = """Follow-up Question: {question}"""
 
