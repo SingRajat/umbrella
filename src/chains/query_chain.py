@@ -1,7 +1,6 @@
 """LCEL query and generation pipeline chain with streaming support."""
 
 import json
-import re
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Union
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.output_parsers import StrOutputParser
@@ -70,9 +69,6 @@ def run_query_pipeline(
 
     logger.info(f"Initiating RAG query pipeline for query: '{query[:60]}...'")
 
-    # Step 1: Retrieval
-    retrieved_chunks = retrieve_chunks(query_text=query, doc_id=doc_id, vector_store=store)
-
     #Step 1: Memory Management
     trimmed_history, effective_summary = process_conversation_history(
         history_messages=history_messages,
@@ -91,33 +87,44 @@ def run_query_pipeline(
     # Step 3: Retrieval
     retrieved_chunks = retrieve_chunks(query_text=standalone_query, doc_id=doc_id, vector_store=store)
 
-    # Step 2: Context Validation
+    # Step 4: Context Validation
     val_result = validate_retrieved_context(retrieved_chunks)
     if not val_result.is_valid:
         logger.warning(f"Query refused during context validation: {val_result.reason}")
-        clean_refusal = f""
+        clean_refusal = f"I cannot answer that: {val_result.reason or 'Retrived evidence is insufficient.'}"
+
+        updated_active = trimmed_history + [HumanMessage(content=query), AIMessage(content=clean_refusal)]
         return RefusalResponse(
             status="refused",
             reason=val_result.reason or "Retrieved evidence is insufficient.",
             retrieved_chunk_ids=[c.chunk_id for c in retrieved_chunks],
             token_usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             query=query,
+            active_history=messages_to_dicts(updated_active),
+            conversation_summary=effective_summary,
         )
 
     usable_chunks = val_result.valid_chunks
 
-    # Step 3: Context Formatting & Prompt Construction
+    # Step 5: Context Formatting & Prompt Construction, Answer model recieves the original question & retrieved chunks
     ## No stroutputparser to preserve AImessage metadata
     context_text = format_context_blocks(usable_chunks)
-    prompt_template = get_rag_prompt_template()
+    prompt_template = get_rag_prompt_template(has_summary=bool(effective_summary))
 
-    # Step 4: LCEL Generation Chain
+    prompt_input = {
+        "context": context_text,
+        "question": query,
+        "chat_history": trimmed_history,
+    }
+    if effective_summary:
+        prompt_input["summary"] = effective_summary
+
+    # Step 6: LCEL Generation Chain
     generation_chain = prompt_template | chat_llm 
 
     try:
         ai_message = generate_with_retry(
-            generation_chain,
-            {"context": context_text, "question": query},
+            generation_chain, prompt_input,
         )
     except Exception as exc:
         logger.error(f"Error during LLM generation: {exc}")
@@ -126,25 +133,32 @@ def run_query_pipeline(
     raw_answer=ai_message.content if hasattr(ai_message, "content") else str(ai_message)
     token_usage= extract_token_usage(ai_message)
 
-    # Step 5: Output & Citation Validation
+    # Step 7: Output & Citation Validation
     output_result = validate_generated_output(raw_answer, usable_chunks)
 
     if output_result.is_refusal:
+        clean_refusal = f"I cannot answer that: {output_result.refusal_reason or 'Context insufficient.'}"
+        updated_active = trimmed_history + [HumanMessage(content=query), AIMessage(content=clean_refusal)]
         return RefusalResponse(
             status="refused",
             reason=output_result.refusal_reason or "Context insufficient.",
             retrieved_chunk_ids=[c.chunk_id for c in usable_chunks],
             token_usage=token_usage,
             query=query,
+            active_history=messages_to_dicts(updated_active),
+            conversation_summary=effective_summary,
         )
+    
+    updated_active = trimmed_history + [HumanMessage(content=query), AIMessage(content=output_result.answer)]
 
     return QueryResponse(
         status="answered",
         answer=output_result.answer,
         citations=output_result.citations,
         token_usage=token_usage,
+        active_history= messages_to_dicts(updated_active),
+        conversation_summary=effective_summary,
     )
-
 
 def stream_query_pipeline(
     query: str,
