@@ -14,9 +14,9 @@ from src.query.prompt import rewrite_prompt
 logger = logging.getLogger("umbrella.query.history")
 
 MAX_PAYLOAD_HISTORY_TOKENS = 10_000   # Fast DoS guard in API route
-MAX_TRIMMED_HISTORY_TOKENS = 1_500    # Active turns budget for answer model prompt
-MAX_SUMMARY_TOKENS = 500              # Maximum budget for rolling summary
-SUMMARY_THRESHOLD_TOKENS = 1_200      # Trigger threshold to summarize older turns
+MAX_TRIMMED_HISTORY_TOKENS = 1_200    # Active turns budget (~20% safety margin)
+MAX_SUMMARY_TOKENS = 400              # Maximum budget for rolling summary (~20% safety margin)
+SUMMARY_THRESHOLD_TOKENS = 960        # Trigger threshold to summarize older turns
 DEFAULT_RETAINED_TURNS = 4            # Keep latest 2 user-assistant pairs uncompressed
 
 def get_history_trimmer():
@@ -60,7 +60,7 @@ def messages_to_dicts(messages: List[BaseMessage]) -> List[dict]:
 SUMMARIZE_PROMPT = (
     "Summarize the following conversation concisely for topic continuity. "
     "Focus strictly on topics discussed. Do NOT treat past answers as verified facts. "
-    "Keep under 500 tokens."
+    "Keep under 400 tokens."
 )
 
 
@@ -77,7 +77,33 @@ def summarize_history(llm: BaseChatModel, existing_summary: Optional[str], turns
             HumanMessage(content=f"{context}Conversation:\n{conv_text}"),
         ]
         res = llm.invoke(prompt)
-        return res.content.strip() if hasattr(res, "content") else str(res).strip()
+        summary_text = res.content.strip() if hasattr(res, "content") else str(res).strip()
+
+        # Approximate ceiling enforcement
+        if count_tokens_approximately([HumanMessage(content=summary_text)]) > MAX_SUMMARY_TOKENS:
+            retry_prompt = [
+                SystemMessage(content=f"Compress the following notes strictly under {MAX_SUMMARY_TOKENS} tokens. Keep key topics and entities only:"),
+                HumanMessage(content=summary_text),
+            ]
+            try:
+                retry_res = llm.invoke(retry_prompt)
+                summary_text = retry_res.content.strip() if hasattr(retry_res, "content") else str(retry_res).strip()
+            except Exception as retry_exc:
+                logger.warning(f"Summary compression retry failed: {retry_exc}")
+
+            # Fallback deterministic trim: allow_partial=True ensures text is trimmed rather than dropped
+            if count_tokens_approximately([HumanMessage(content=summary_text)]) > MAX_SUMMARY_TOKENS:
+                trimmed_msgs = trim_messages(
+                    [HumanMessage(content=summary_text)],
+                    max_tokens=MAX_SUMMARY_TOKENS,
+                    token_counter="approximate",
+                    allow_partial=True,
+                    strategy="last",
+                )
+                if trimmed_msgs:
+                    summary_text = trimmed_msgs[0].content
+
+        return summary_text
     except Exception as exc:
         logger.warning(f"Summarization failed: {exc}. Retaining existing summary.")
         return existing_summary or ""
@@ -88,20 +114,31 @@ def process_conversation_history(
     conversation_summary: Optional[str],
     llm: BaseChatModel,
 ) -> Tuple[List[BaseMessage], Optional[str]]:
-    """Universal pre-step: summarize older turns if token budget is exceeded, then trim active turns."""
+    """Universal pre-step: trim active turns to budget, preserve complete pairs, and summarize dropped turns."""
     if not history_messages:
         return [], conversation_summary
 
     active = list(history_messages)
     effective_summary = conversation_summary
 
-    if count_tokens_approximately(active) > SUMMARY_THRESHOLD_TOKENS:
-        if len(active) > DEFAULT_RETAINED_TURNS:
-            older = active[:-DEFAULT_RETAINED_TURNS]
-            active = active[-DEFAULT_RETAINED_TURNS:]
-            effective_summary = summarize_history(llm, conversation_summary, older)
-
+    # 1. Trim active turns to fit token budget
     trimmed = get_history_trimmer().invoke(active)
+
+    # 2. Complete pair boundary (HumanMessage followed by AIMessage)
+    if trimmed and len(trimmed) % 2 != 0:
+        trimmed = trimmed[:-1]
+
+    # 3. Summarize exactly what trimming dropped
+    dropped_count = len(active) - len(trimmed)
+    if dropped_count > 0:
+        dropped_turns = active[:dropped_count]
+        effective_summary = summarize_history(llm, effective_summary, dropped_turns)
+
+    # 4. If even a single pair couldn't fit, summarize all and keep prompt clean
+    if not trimmed and active:
+        effective_summary = summarize_history(llm, effective_summary, active)
+        trimmed = []
+
     return trimmed, effective_summary
 
 
