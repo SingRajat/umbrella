@@ -14,15 +14,20 @@ from frontend.components.upload import render_upload_section
 def render_workspace_page():
     st.set_page_config(
         page_title="Workspace — Umbrella RAG",
-        page_icon="☂️",
         layout="wide",
     )
 
     # Initialize session states
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    if "conversation_summary" not in st.session_state:
+        st.session_state.conversation_summary = None
     if "current_doc" not in st.session_state:
         st.session_state.current_doc = None
+    if "history_doc_id" not in st.session_state:
+        st.session_state.history_doc_id = None
 
     backend_url = get_backend_url()
 
@@ -40,6 +45,14 @@ def render_workspace_page():
             if st.session_state.get("current_doc")
             else None
         )
+
+        # If user selected a different document, reset memory so contexts don't mix
+        if active_doc_id != st.session_state.history_doc_id:
+            st.session_state.messages = []
+            st.session_state.chat_history = []
+            st.session_state.conversation_summary = None
+            st.session_state.history_doc_id = active_doc_id
+
         render_chat_section(backend_url, active_doc_id=active_doc_id)
 
 
