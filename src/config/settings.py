@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 100
     top_k: int = 3
-    similarity_threshold: float = 0.5
+    similarity_threshold: float = 0.1
 
     # Storage Settings
     chroma_persist_dir: str = "data/chroma_db"
