@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +38,7 @@ router = APIRouter(prefix="/api/v1", tags=["RAG"])
 
 DOCUMENTS_DIR = Path("data/documents")
 REGISTRY_FILE = DOCUMENTS_DIR / "registry.json"
+_registry_lock = threading.Lock()
 
 
 def _load_registry() -> Dict[str, dict]:
@@ -57,10 +59,14 @@ def _load_registry() -> Dict[str, dict]:
 
 
 def _save_registry(registry: Dict[str, dict]):
-    """Persist metadata registry of uploaded documents to disk."""
+    """Persist metadata registry of uploaded documents to disk atomically."""
     DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
+    temp_file = REGISTRY_FILE.with_suffix(".tmp")
+    with open(temp_file, "w", encoding="utf-8") as f:
         json.dump(registry, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(temp_file, REGISTRY_FILE)
 
 
 @router.get(
@@ -168,20 +174,21 @@ def upload_document(
         raise IngestionError(f"Ingestion pipeline failed: {exc}") from exc
 
     # 7. Record document in metadata registry
-    registry = _load_registry()
-    doc_entry = {
-        "doc_id": doc_id,
-        "filename": filename,
-        "saved_filename": saved_filename,
-        "source_type": source_type,
-        "content_hash": content_hash,
-        "file_size": len(content),
-        "chunk_count": chunk_count,
-        "ingested_at": ingested_at,
-        "status": "ingested",
-    }
-    registry[doc_id] = doc_entry
-    _save_registry(registry)
+    with _registry_lock:
+        registry = _load_registry()
+        doc_entry = {
+            "doc_id": doc_id,
+            "filename": filename,
+            "saved_filename": saved_filename,
+            "source_type": source_type,
+            "content_hash": content_hash,
+            "file_size": len(content),
+            "chunk_count": chunk_count,
+            "ingested_at": ingested_at,
+            "status": "ingested",
+        }
+        registry[doc_id] = doc_entry
+        _save_registry(registry)
 
     logger.info(f"Document uploaded and indexed successfully: {filename} ({chunk_count} chunks, doc_id: {doc_id})")
 
@@ -279,8 +286,10 @@ def delete_document(doc_id: str):
             logger.warning(f"Could not remove physical file {saved_path}: {exc}")
 
     # 3. Remove from registry LAST after vector and file cleanup succeeds
-    registry.pop(doc_id)
-    _save_registry(registry)
+    with _registry_lock:
+        registry = _load_registry()
+        registry.pop(doc_id, None)
+        _save_registry(registry)
 
     logger.info(f"Document deleted: {doc_id} ({chunks_removed} vectors removed)")
     return DocumentDeleteResponse(
